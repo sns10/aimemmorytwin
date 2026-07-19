@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Sparkles, Brain, ArrowRight, AlertCircle } from "lucide-react";
@@ -164,5 +164,3 @@ function ConceptCard({ concept }: { concept: ConceptWithState }) {
   );
 }
 
-// Silence unused import warning when router not needed here.
-void useRouter;
