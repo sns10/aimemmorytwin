@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles, ArrowRight, BookOpen, History, ChevronRight } from "lucide-react";
 import {
   getStudentOverview,
@@ -53,6 +53,13 @@ function Dashboard() {
     staleTime: 60_000,
   });
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [today, setToday] = useState<string>("");
+  const [greet, setGreet] = useState<string>("hi");
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+    const h = new Date().getHours();
+    setGreet(h < 5 ? "night" : h < 12 ? "morning" : h < 18 ? "afternoon" : "evening");
+  }, []);
 
   const allTopics = subjects.flatMap((s) => s.chapters.flatMap((c) => c.topics));
   const priority: Record<string, number> = {
@@ -115,9 +122,9 @@ function Dashboard() {
           {/* RIGHT — briefing, plan */}
           <section className="flex flex-col gap-4 lg:h-[calc(100vh-6.5rem)] lg:overflow-y-auto lg:pr-1">
             <div>
-              <div className="ink-caps text-muted-foreground">Daily Synapse · {new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" })}</div>
+              <div className="ink-caps text-muted-foreground">Daily Synapse{today ? ` · ${today}` : ""}</div>
               <h1 className="mt-1.5 font-serif text-3xl font-bold leading-tight sm:text-4xl">
-                Good {greeting()}, {data.student.name.split(" ")[0]}.
+                Good {greet}, {data.student.name.split(" ")[0]}.
               </h1>
               <p className="mt-1.5 text-sm text-muted-foreground">
                 {data.dueCount > 0
@@ -235,11 +242,4 @@ function Dashboard() {
   );
 }
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 5) return "night";
-  if (h < 12) return "morning";
-  if (h < 18) return "afternoon";
-  return "evening";
-}
 
