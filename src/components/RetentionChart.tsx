@@ -130,24 +130,27 @@ export function RetentionChart({ concepts }: Props) {
           ))}
 
           {/* 80% threshold */}
-          <line
-            x1={PAD.left}
-            x2={WIDTH - PAD.right}
-            y1={thresholdY}
-            y2={thresholdY}
-            stroke="hsl(var(--primary))"
-            strokeDasharray="4 4"
-            strokeWidth={1.25}
-            opacity={0.7}
-          />
-          <text
-            x={WIDTH - PAD.right}
-            y={thresholdY - 4}
-            textAnchor="end"
-            className="fill-primary text-[10px] font-medium"
-          >
-            80% recall
-          </text>
+          <g className="text-primary">
+            <line
+              x1={PAD.left}
+              x2={WIDTH - PAD.right}
+              y1={thresholdY}
+              y2={thresholdY}
+              stroke="currentColor"
+              strokeDasharray="4 4"
+              strokeWidth={1.25}
+              opacity={0.75}
+            />
+            <text
+              x={WIDTH - PAD.right}
+              y={thresholdY - 4}
+              textAnchor="end"
+              fill="currentColor"
+              className="text-[10px] font-medium"
+            >
+              80% recall
+            </text>
+          </g>
 
           {/* curves */}
           {series.map((s) => {
