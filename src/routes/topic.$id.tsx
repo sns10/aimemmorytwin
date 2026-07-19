@@ -24,7 +24,7 @@ import {
 } from "@/lib/memorytwin.functions";
 import { StageBadge } from "@/components/StageBadge";
 import { stageBlurb } from "@/lib/stage";
-import type { QuestionRow, TopicWorkspace as TW } from "@/lib/course.functions";
+import type { QuestionRow } from "@/lib/course.functions";
 
 const workspaceQuery = (id: string) =>
   queryOptions({
@@ -240,7 +240,7 @@ function PracticePanel({
   ws,
   topicId,
 }: {
-  ws: TW;
+  ws: TopicWorkspace;
   topicId: string;
 }) {
   const qc = useQueryClient();
