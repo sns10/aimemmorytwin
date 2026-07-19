@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles, Brain, ArrowRight, AlertCircle } from "lucide-react";
+import { Sparkles, Brain, ArrowRight, AlertCircle, BookOpen, History } from "lucide-react";
 import {
   getStudentOverview,
   generateDailyBriefing,
   type ConceptWithState,
 } from "@/lib/memorytwin.functions";
+import { getCourseTree } from "@/lib/course.functions";
 import { RetentionChart } from "@/components/RetentionChart";
+import { StageBadge } from "@/components/StageBadge";
+import { nextActionFor, stageBlurb } from "@/lib/stage";
 
 const overviewQuery = queryOptions({
   queryKey: ["overview"],
@@ -15,8 +18,17 @@ const overviewQuery = queryOptions({
   staleTime: 0,
 });
 
+const courseQuery = queryOptions({
+  queryKey: ["course-tree"],
+  queryFn: () => getCourseTree(),
+  staleTime: 0,
+});
+
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(overviewQuery),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(overviewQuery);
+    context.queryClient.ensureQueryData(courseQuery);
+  },
   component: Dashboard,
   errorComponent: ErrBoundary,
   notFoundComponent: () => <div className="p-10">Not found</div>,
@@ -32,6 +44,7 @@ function ErrBoundary({ error }: { error: Error }) {
 
 function Dashboard() {
   const { data } = useSuspenseQuery(overviewQuery);
+  const { data: subjects } = useSuspenseQuery(courseQuery);
   const briefingFn = useServerFn(generateDailyBriefing);
   const briefingQ = useQuery({
     queryKey: ["briefing"],
@@ -43,6 +56,18 @@ function Dashboard() {
     .filter((c) => new Date(c.state.next_revision_at).getTime() <= Date.now())
     .slice(0, 3);
 
+  // Continue-learning pick: earliest unfinished topic in course order.
+  const allTopics = subjects.flatMap((s) => s.chapters.flatMap((c) => c.topics));
+  const priority: Record<string, number> = {
+    review: 0, learn: 1, practice: 2, apply: 3, master: 9,
+  };
+  const nextTopic = [...allTopics].sort(
+    (a, b) =>
+      (priority[a.stage] - priority[b.stage]) ||
+      (a.sort_order - b.sort_order),
+  )[0];
+  const nextAction = nextTopic ? nextActionFor(nextTopic.stage, nextTopic.id) : null;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/60 backdrop-blur">
@@ -51,9 +76,14 @@ function Dashboard() {
             <Brain className="h-5 w-5 text-primary" />
             <span className="font-serif text-lg font-semibold">MemoryTwin AI</span>
           </div>
-          <span className="text-xs text-muted-foreground">
-            Class 10 · Chemistry · Demo
-          </span>
+          <nav className="flex items-center gap-4 text-sm text-muted-foreground">
+            <Link to="/course" className="inline-flex items-center gap-1 hover:text-foreground">
+              <BookOpen className="h-4 w-4" /> Course
+            </Link>
+            <Link to="/history" className="inline-flex items-center gap-1 hover:text-foreground">
+              <History className="h-4 w-4" /> Activity
+            </Link>
+          </nav>
         </div>
       </header>
 
@@ -80,13 +110,23 @@ function Dashboard() {
                 "Let's build your first study session.")}
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-4">
-            <Link
-              to="/quiz"
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
-            >
-              Start today's 10-minute session
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            {nextTopic && nextAction ? (
+              <Link
+                to={nextAction.href as "/topic/$id"}
+                params={{ id: nextTopic.id }}
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
+              >
+                {nextAction.label}: {nextTopic.name}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link
+                to="/quiz"
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow transition hover:opacity-90"
+              >
+                Start today's session <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
             <span className="text-xs text-muted-foreground">
               {data.dueCount > 0
                 ? `${data.dueCount} concept${data.dueCount === 1 ? "" : "s"} due for review`
@@ -106,6 +146,51 @@ function Dashboard() {
               ))}
             </div>
           )}
+        </section>
+
+        {/* Course progress */}
+        <section className="mt-12">
+          <div className="flex items-baseline justify-between">
+            <div>
+              <h2 className="font-serif text-2xl font-semibold">Your course</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Learn → Practice → Apply → Master. Progress is driven by your actual memory, not just checkboxes.
+              </p>
+            </div>
+            <Link to="/course" className="text-sm text-primary hover:underline">
+              Open course →
+            </Link>
+          </div>
+          <div className="mt-6 space-y-4">
+            {subjects.flatMap((s) => s.chapters).map((ch) => (
+              <div key={ch.id} className="rounded-2xl border border-border bg-card p-5">
+                <div className="flex items-baseline justify-between">
+                  <h3 className="font-serif text-lg font-semibold">{ch.name}</h3>
+                  <span className="text-xs text-muted-foreground">{Math.round(ch.progress * 100)}%</span>
+                </div>
+                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${Math.max(3, ch.progress * 100)}%` }}
+                  />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {ch.topics.map((t) => (
+                    <Link
+                      key={t.id}
+                      to="/topic/$id"
+                      params={{ id: t.id }}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs hover:border-primary/60"
+                      title={stageBlurb(t.stage)}
+                    >
+                      {t.name}
+                      <StageBadge stage={t.stage} />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Knowledge grid */}
