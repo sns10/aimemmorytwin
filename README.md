@@ -46,8 +46,6 @@ Seeded demo: 10th-grade Chemistry. The engine is subject-agnostic.
 
 ## Screenshots
 
-> Add PNGs/GIFs under `docs/screenshots/` and reference them here.
-
 | View | File |
 | --- | --- |
 | Dashboard — 3D brain + Daily Synapse + lanes | `docs/screenshots/dashboard.png` |
@@ -61,84 +59,7 @@ answer question → brain node updates → lane re-ranks → AI card appears).
 
 ---
 
-## How to run it locally
 
-### Prerequisites
-
-- **Node.js ≥ 20**
-- **[Bun](https://bun.sh) ≥ 1.1** (package manager used in this repo — see `bunfig.toml`)
-- A **Supabase** project (Postgres + Auth). On Lovable Cloud this is provisioned for you.
-- A **Lovable AI Gateway key** (Gemini 2.5 Flash for briefings / explanations / grading).
-
-### 1. Install
-
-```bash
-git clone https://github.com/<you>/memorytwin.git
-cd memorytwin
-bun install
-```
-
-### 2. Environment variables
-
-Create `.env` at the project root. `.env` is git-ignored — never commit it.
-
-```bash
-# Public (browser-safe) — Vite exposes VITE_* to the client bundle
-VITE_SUPABASE_URL="https://<project-ref>.supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="<publishable-anon-key>"
-VITE_SUPABASE_PROJECT_ID="<project-ref>"
-
-# Server-only — used by createServerFn handlers
-SUPABASE_URL="https://<project-ref>.supabase.co"
-SUPABASE_PUBLISHABLE_KEY="<publishable-anon-key>"
-SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"   # server only, never expose
-
-# AI
-LOVABLE_API_KEY="<lovable-ai-gateway-key>"
-```
-
-> On Lovable Cloud, these are injected into the runtime automatically —
-> you do not need a local `.env` when running inside the Lovable editor.
-
-### 3. Database — migrations & seed
-
-Migrations live in `supabase/migrations/`. Apply them and seed the demo
-curriculum (10th-grade Chemistry, ~30 concepts, 50 tagged questions):
-
-```bash
-# with the Supabase CLI
-supabase db push          # apply migrations
-supabase db seed          # seed subjects/chapters/topics/concepts/questions
-```
-
-Every `public` table has explicit `GRANT`s and RLS scoped to the demo
-student.
-
-### 4. Run the dev server
-
-```bash
-bun run dev
-```
-
-Vite serves the app at http://localhost:8080. TanStack Start handles SSR and
-`createServerFn` handlers on the same runtime — there is no separate API
-process to start.
-
-### 5. Typecheck / lint / build
-
-```bash
-bunx tsgo --noEmit     # strict TypeScript typecheck
-bun run lint           # ESLint
-bun run build          # production build
-```
-
-### 6. Deploy
-
-Click **Publish** in the Lovable editor (or push to GitHub with the Lovable
-GitHub sync enabled). The Worker runtime hosts SSR + server functions; the
-Supabase project hosts Postgres + Auth + Storage.
-
----
 
 ## Architecture snapshot
 
@@ -236,12 +157,6 @@ Prerequisites are stored as a `uuid[]` on `concepts` (small graph, no join
 table needed at this scale). The BKT update reads prereq mastery to gate the
 effective learn rate — see below.
 
----
-
-## Algorithms — BKT + FSRS-lite pseudocode
-
-Two independent probabilistic models run per `(student, concept)`. Both live
-in [`src/lib/bkt.server.ts`](./src/lib/bkt.server.ts) as pure functions.
 
 ### On every attempt
 
@@ -334,36 +249,7 @@ Ranking within each lane:
 A hallucination guard grounds every AI call in the current concept catalog —
 the briefing cannot recommend a topic that isn't in the student's tree.
 
----
-
-## Evidence & sanity checks
-
-> Full evaluation harness is WIP. What ships today:
-
-- **Monotonicity test**: a simulated learner answering correctly N times in a
-  row must have strictly non-decreasing `p_know` and non-decreasing `S`.
-  Verified for N = 1..50 across difficulty ∈ {0.2, 0.5, 0.8}.
-- **Guess/slip smoothing**: on an *easy* item (d=0.2), a single lucky hit
-  moves `p_know` less than on a *hard* item (d=0.8) — consistent with
-  Corbett & Anderson's expected posterior curves.
-- **Prereq gating**: with prereq mastery = 0, the effective learn rate drops
-  to ~30% of base — a student can't "skip ahead" into inflated mastery.
-- **Retention scheduler**: `next_review_at` computed from
-  `t = -S · ln(0.80)` matches the RetentionChart's 80% threshold line to
-  within rounding.
-
-### Planned (roadmap)
-
-- Simulated cohort of 500 learners with known true skill; measure
-  **calibration** of `p_know` vs. observed correctness (reliability diagram).
-- **Retention uplift proxy**: compare lane-driven review order vs. random
-  review order on simulated forgetting curves — expect ~2× longer retention
-  at the 7-day mark, consistent with spaced-repetition literature.
-- **Queue quality**: % of overdue concepts surfaced in the top-3 of the
-  Review lane; % of at-risk concepts covered per session.
-
----
-
+-
 ## Limitations & safeguards
 
 - **Decision support, not grading authority.** MemoryTwin's mastery estimate
@@ -417,11 +303,7 @@ supabase/
 
 ---
 
-## License
 
-MIT — see [`LICENSE`](./LICENSE).
-
----
 
 *Built with TanStack Start, Supabase (Lovable Cloud), react-three-fiber, and
 the Lovable AI Gateway.*
