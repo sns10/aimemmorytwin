@@ -139,7 +139,11 @@ function ConceptCard({ concept }: { concept: ConceptWithState }) {
   const due = new Date(concept.state.next_revision_at).getTime() <= Date.now();
   const nextDate = new Date(concept.state.next_revision_at);
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+    <Link
+      to="/concept/$id"
+      params={{ id: concept.id }}
+      className="block rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/60 hover:shadow-md"
+    >
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-serif text-lg font-semibold leading-tight">{concept.name}</h3>
         {due && (
@@ -165,7 +169,7 @@ function ConceptCard({ concept }: { concept: ConceptWithState }) {
               })}`}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }
 
