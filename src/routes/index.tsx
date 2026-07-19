@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Sparkles, ArrowRight, BookOpen, History, ChevronRight } from "lucide-react";
+import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle } from "lucide-react";
 import {
   getStudentOverview,
   generateDailyBriefing,
@@ -11,6 +11,7 @@ import { getCourseTree } from "@/lib/course.functions";
 import { BrainVisualization } from "@/components/BrainVisualization";
 import { RetentionChart } from "@/components/RetentionChart";
 import { StudyPlan } from "@/components/StudyPlan";
+import { Onboarding, openOnboarding } from "@/components/Onboarding";
 import { nextActionFor } from "@/lib/stage";
 
 const overviewQuery = queryOptions({
@@ -94,6 +95,12 @@ function Dashboard() {
             </span>
           </div>
           <nav className="flex items-center gap-6 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            <button
+              onClick={openOnboarding}
+              className="inline-flex items-center gap-1.5 hover:text-primary"
+            >
+              <HelpCircle className="h-3.5 w-3.5" /> Tour
+            </button>
             <Link to="/course" className="inline-flex items-center gap-1.5 hover:text-primary">
               <BookOpen className="h-3.5 w-3.5" /> Course
             </Link>
@@ -106,6 +113,8 @@ function Dashboard() {
           </nav>
         </div>
       </header>
+
+      <Onboarding />
 
       {/* Split-screen instrument: brain | briefing + plan */}
       <main className="mx-auto max-w-[1400px] p-4 sm:p-6">
