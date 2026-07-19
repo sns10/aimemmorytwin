@@ -87,10 +87,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "A cognitive twin for students: BKT + forgetting curve models decide exactly what you need to revise today.",
+          "MemoryTwin AI simulates your memory in real time using Bayesian Knowledge Tracing and the forgetting curve, so you only revise what you're about to forget.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "MemoryTwin AI — Your Study Digital Twin" },
+      { name: "twitter:description", content: "MemoryTwin AI simulates your memory in real time using Bayesian Knowledge Tracing and the forgetting curve, so you only revise what you're about to forget." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2e0cb800-1eaa-4c23-b085-7aad21bec25a/id-preview-71941b95--40d7b015-56fd-4558-929b-f8cf8f2dc4be.lovable.app-1784425684481.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2e0cb800-1eaa-4c23-b085-7aad21bec25a/id-preview-71941b95--40d7b015-56fd-4558-929b-f8cf8f2dc4be.lovable.app-1784425684481.png" },
     ],
     links: [
       {
