@@ -20,44 +20,45 @@ function fibSphere(n: number, radius = 1) {
 
 // A brain-ish deformed sphere: sin/cos wobble on radius.
 function brainRadius(theta: number, phi: number) {
-  const lobe = 1 + 0.08 * Math.sin(2 * phi) - 0.06 * Math.cos(3 * theta);
-  const fissure = 1 - 0.09 * Math.abs(Math.sin(phi * 4)) * Math.exp(-Math.abs(theta) * 0.5);
-  return 1.35 * lobe * fissure;
+  // elongated front-to-back like a cerebrum
+  const stretch = 1 + 0.18 * Math.cos(theta) ** 2;
+  const flatten = 1 - 0.12 * Math.sin(phi) ** 4;
+  // central longitudinal fissure along theta=0
+  const fissure = 1 - 0.08 * Math.exp(-((theta) ** 2) / 0.02) * Math.sin(phi);
+  // gyri ripples
+  const gyri = 1 + 0.03 * Math.sin(8 * phi) * Math.cos(5 * theta);
+  return 1.3 * stretch * flatten * fissure * gyri;
 }
 
 function BrainCloud() {
   const ref = useRef<THREE.Points>(null!);
   const geo = useMemo(() => {
-    const N = 2200;
+    const N = 2800;
     const pts = fibSphere(N, 1);
     const arr = new Float32Array(N * 3);
     pts.forEach(([x, y, z], i) => {
       const theta = Math.atan2(z, x);
       const phi = Math.acos(y);
       const r = brainRadius(theta, phi);
-      // organic jitter
-      const j = 0.02 * (Math.random() - 0.5);
-      arr[i * 3] = x * r + j;
-      arr[i * 3 + 1] = y * r + j;
-      arr[i * 3 + 2] = z * r + j;
+      // organic jitter per axis
+      arr[i * 3] = x * r + 0.03 * (Math.random() - 0.5);
+      arr[i * 3 + 1] = y * r + 0.03 * (Math.random() - 0.5);
+      arr[i * 3 + 2] = z * r + 0.03 * (Math.random() - 0.5);
     });
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(arr, 3));
     return g;
   }, []);
 
-  useFrame((_s, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * 0.08;
-  });
-
   return (
     <points ref={ref} geometry={geo}>
       <pointsMaterial
-        size={0.018}
+        size={0.022}
         color="#2d2d2d"
         transparent
-        opacity={0.55}
+        opacity={0.7}
         sizeAttenuation
+        depthWrite={false}
       />
     </points>
   );
@@ -77,19 +78,19 @@ function NodeMarker({
   const ref = useRef<THREE.Mesh>(null!);
   const glowRef = useRef<THREE.Mesh>(null!);
   const color = nodeColor(node);
-  const size = 0.05 + node.mastery * 0.06;
+  const size = 0.045 + node.mastery * 0.05;
   const shouldPulse = node.due || node.retention < 0.5;
 
   useFrame((s) => {
     const t = s.clock.elapsedTime;
     if (glowRef.current) {
-      const base = focused ? 1.9 : 1.4;
-      const pulse = shouldPulse ? 0.35 * Math.sin(t * 2 + node.name.length) : 0;
+      const base = focused ? 1.7 : 1.15;
+      const pulse = shouldPulse ? 0.25 * (0.5 + 0.5 * Math.sin(t * 2 + node.name.length)) : 0;
       const scale = base + pulse;
       glowRef.current.scale.setScalar(scale);
     }
     if (ref.current && focused) {
-      ref.current.scale.setScalar(1.4);
+      ref.current.scale.setScalar(1.35);
     } else if (ref.current) {
       ref.current.scale.setScalar(1);
     }
@@ -109,8 +110,8 @@ function NodeMarker({
       }}
     >
       <mesh ref={glowRef}>
-        <sphereGeometry args={[size, 16, 16]} />
-        <meshBasicMaterial color={color} transparent opacity={0.15} />
+        <sphereGeometry args={[size * 1.6, 16, 16]} />
+        <meshBasicMaterial color={color} transparent opacity={0.18} depthWrite={false} />
       </mesh>
       <mesh ref={ref}>
         <sphereGeometry args={[size, 24, 24]} />
@@ -161,11 +162,6 @@ function Nodes({
   );
 }
 
-function Rig() {
-  useState(0);
-  return null;
-}
-
 export default function BrainScene({
   nodes,
   focusId,
@@ -177,19 +173,22 @@ export default function BrainScene({
 }) {
   return (
     <Canvas
-      camera={{ position: [0, 0, 4.2], fov: 40 }}
+      camera={{ position: [1.6, 1.1, 3.6], fov: 40 }}
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: true }}
     >
-      <ambientLight intensity={0.6} />
-      <BrainCloud />
-      <Nodes nodes={nodes} focusId={focusId} onHover={onHover} />
-      <Rig />
+      <ambientLight intensity={0.8} />
+      <group rotation={[0.15, 0, 0.05]}>
+        <BrainCloud />
+        <Nodes nodes={nodes} focusId={focusId} onHover={onHover} />
+      </group>
       <OrbitControls
         enablePan={false}
         enableZoom={false}
         autoRotate={false}
         rotateSpeed={0.5}
+        minPolarAngle={Math.PI / 3}
+        maxPolarAngle={(Math.PI * 2) / 3}
       />
     </Canvas>
   );
