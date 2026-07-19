@@ -138,6 +138,7 @@ export type Database = {
       concepts: {
         Row: {
           chapter_id: string | null
+          concept_tags: string[]
           correct_index: number
           created_at: string
           difficulty: number
@@ -145,6 +146,10 @@ export type Database = {
           learning_objectives: string | null
           name: string
           options: Json
+          p_guess: number
+          p_init: number
+          p_learn: number
+          p_slip: number
           prerequisite_id: string | null
           question: string
           sort_order: number
@@ -153,6 +158,7 @@ export type Database = {
         }
         Insert: {
           chapter_id?: string | null
+          concept_tags?: string[]
           correct_index: number
           created_at?: string
           difficulty?: number
@@ -160,6 +166,10 @@ export type Database = {
           learning_objectives?: string | null
           name: string
           options: Json
+          p_guess?: number
+          p_init?: number
+          p_learn?: number
+          p_slip?: number
           prerequisite_id?: string | null
           question: string
           sort_order?: number
@@ -168,6 +178,7 @@ export type Database = {
         }
         Update: {
           chapter_id?: string | null
+          concept_tags?: string[]
           correct_index?: number
           created_at?: string
           difficulty?: number
@@ -175,6 +186,10 @@ export type Database = {
           learning_objectives?: string | null
           name?: string
           options?: Json
+          p_guess?: number
+          p_init?: number
+          p_learn?: number
+          p_slip?: number
           prerequisite_id?: string | null
           question?: string
           sort_order?: number
@@ -251,6 +266,9 @@ export type Database = {
           event_kind: string
           id: string
           is_correct: boolean
+          post_mastery: number | null
+          pre_mastery: number | null
+          question_id: string | null
           response_time_ms: number
           student_id: string
         }
@@ -261,6 +279,9 @@ export type Database = {
           event_kind?: string
           id?: string
           is_correct: boolean
+          post_mastery?: number | null
+          pre_mastery?: number | null
+          question_id?: string | null
           response_time_ms?: number
           student_id: string
         }
@@ -271,6 +292,9 @@ export type Database = {
           event_kind?: string
           id?: string
           is_correct?: boolean
+          post_mastery?: number | null
+          pre_mastery?: number | null
+          question_id?: string | null
           response_time_ms?: number
           student_id?: string
         }
@@ -280,6 +304,13 @@ export type Database = {
             columns: ["concept_id"]
             isOneToOne: false
             referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_events_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
             referencedColumns: ["id"]
           },
           {
@@ -328,6 +359,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "lesson_content_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          concept_id: string
+          correct_index: number
+          created_at: string
+          difficulty: number
+          explanation: string | null
+          id: string
+          options: Json
+          prerequisite_concept_ids: string[]
+          question: string
+          sort_order: number
+          tags: string[]
+        }
+        Insert: {
+          concept_id: string
+          correct_index: number
+          created_at?: string
+          difficulty?: number
+          explanation?: string | null
+          id?: string
+          options: Json
+          prerequisite_concept_ids?: string[]
+          question: string
+          sort_order?: number
+          tags?: string[]
+        }
+        Update: {
+          concept_id?: string
+          correct_index?: number
+          created_at?: string
+          difficulty?: number
+          explanation?: string | null
+          id?: string
+          options?: Json
+          prerequisite_concept_ids?: string[]
+          question?: string
+          sort_order?: number
+          tags?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_concept_id_fkey"
             columns: ["concept_id"]
             isOneToOne: false
             referencedRelation: "concepts"
