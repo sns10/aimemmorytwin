@@ -484,9 +484,12 @@ export const generateDailyBriefing = createServerFn({ method: "POST" }).handler(
     const now = Date.now();
     const mastered: string[] = [];
     const atRisk: string[] = [];
+    const allNames: string[] = [];
+    const upcoming: { name: string; mastery: number }[] = [];
     for (const r of rows ?? []) {
       const name = (r.concepts as { name: string } | null)?.name;
       if (!name) continue;
+      allNames.push(name);
       const mastery = Number(r.mastery_probability);
       const due = new Date(r.next_revision_at).getTime() <= now;
       const stability = Number(r.memory_stability);
@@ -496,13 +499,34 @@ export const generateDailyBriefing = createServerFn({ method: "POST" }).handler(
       if (mastery > 0.9 && !due) mastered.push(`${name} (${Math.round(mastery * 100)}%)`);
       else if (due || R < 0.8)
         atRisk.push(`${name} (retention ~${Math.round(R * 100)}%)`);
+      else upcoming.push({ name, mastery });
     }
+
+    // Pull the actual concept catalog so the AI can't invent topic names.
+    const { data: catalogRows } = await supabase
+      .from("concepts")
+      .select("name, subject")
+      .order("sort_order");
+    const catalog = catalogRows ?? [];
+    const subjects = Array.from(new Set(catalog.map((c) => c.subject))).join(", ") || "Chemistry";
+    const allowedNames = catalog.map((c) => c.name);
+    if (allNames.length === 0) {
+      for (const c of catalog.slice(0, 3)) upcoming.push({ name: c.name, mastery: 0.15 });
+    }
+    const focusList = atRisk.length
+      ? atRisk
+      : upcoming
+          .sort((a, b) => a.mastery - b.mastery)
+          .slice(0, 2)
+          .map((u) => `${u.name} (new)`);
 
     const apiKey = process.env.LOVABLE_API_KEY;
     let briefing =
-      atRisk.length === 0
+      focusList.length === 0
         ? `Nice work, ${student?.name ?? "Alex"} — nothing is fading yet. Do a light review to keep your streak strong.`
-        : `Hey ${student?.name ?? "Alex"}, your memory of ${atRisk[0]} is slipping — let's do a quick 5-minute review before it fades.`;
+        : atRisk.length > 0
+          ? `Hey ${student?.name ?? "Alex"}, your memory of ${atRisk[0]} is slipping — let's do a quick 5-minute review before it fades.`
+          : `Hey ${student?.name ?? "Alex"}, let's start with ${focusList[0]} today to build a strong foundation.`;
 
     if (apiKey) {
       try {
@@ -518,13 +542,17 @@ export const generateDailyBriefing = createServerFn({ method: "POST" }).handler(
               {
                 role: "system",
                 content:
-                  "You are a warm, expert AI tutor. Give the student a 2-sentence daily briefing based on their memory data. Never mention BKT, retrievability, or stability. Be conversational, specific, and encouraging. Name the exact concepts.",
+                  "You are a warm, expert " +
+                  subjects +
+                  " tutor. Write EXACTLY 2 short sentences as a daily briefing. HARD RULES: (1) You may ONLY reference concept names from the ALLOWED_CONCEPTS list — never invent, generalize, or substitute topics (e.g. do not say 'genetics', 'heredity', 'algebra' unless they appear in the list). (2) Prefer the FOCUS_TODAY concepts. (3) No markdown, no asterisks, no bullet points. (4) Never mention BKT, retrievability, or stability. Be conversational and encouraging.",
               },
               {
                 role: "user",
                 content: `Student Name: ${student?.name ?? "Alex"}
-Mastered Concepts (skip): ${mastered.length ? mastered.join(", ") : "none yet"}
-At-Risk Concepts (study today): ${atRisk.length ? atRisk.join(", ") : "none"}`,
+Subject: ${subjects}
+ALLOWED_CONCEPTS (only use names from this list): ${allowedNames.join(", ")}
+FOCUS_TODAY: ${focusList.length ? focusList.join(", ") : "none"}
+Mastered (skip): ${mastered.length ? mastered.join(", ") : "none yet"}`,
               },
             ],
           }),
@@ -534,7 +562,17 @@ At-Risk Concepts (study today): ${atRisk.length ? atRisk.join(", ") : "none"}`,
             choices?: { message?: { content?: string } }[];
           };
           const text = json.choices?.[0]?.message?.content?.trim();
-          if (text) briefing = text;
+          // Guard: if the model still names a concept outside the catalog, fall back.
+          if (text) {
+            const lower = text.toLowerCase();
+            const mentionsAllowed =
+              allowedNames.some((n) => lower.includes(n.toLowerCase())) ||
+              lower.includes((student?.name ?? "alex").toLowerCase());
+            const hallucinated = /genetic|heredity|dna|algebra|geometry|physics|photosynthes/i.test(
+              text,
+            ) && !allowedNames.some((n) => /genetic|heredity|dna/i.test(n));
+            if (mentionsAllowed && !hallucinated) briefing = text;
+          }
         } else {
           console.error("Lovable AI briefing failed:", res.status, await res.text());
         }
