@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef, useState, lazy } from "react";
+import { Suspense, useEffect, useMemo, useState, lazy } from "react";
 import type { ConceptWithState } from "@/lib/memorytwin.functions";
 
 // Three.js is browser-only — dynamically load the 3D scene after hydration.
@@ -158,7 +158,9 @@ function Readout({
   );
 }
 
-// re-export ref for callers that only want the ref type
-export type { BrainNode as _BrainNode };
-// ensures unused ref warning silence
-void useRef;
+// Hydration gate — three.js must not render during SSR.
+export function useHydrated() {
+  const [h, setH] = useState(false);
+  useEffect(() => setH(true), []);
+  return h;
+}
