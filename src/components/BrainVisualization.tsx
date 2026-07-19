@@ -51,6 +51,7 @@ export function BrainVisualization({
 }) {
   const nodes = useMemo(() => toNodes(concepts), [concepts]);
   const [hovered, setHovered] = useState<string | null>(null);
+  const hydrated = useHydrated();
   const focus = activeId ?? hovered;
   const focusNode = nodes.find((n) => n.id === focus) ?? null;
 
@@ -84,16 +85,18 @@ export function BrainVisualization({
 
       {/* the 3d canvas */}
       <div className="absolute inset-0">
-        <Suspense fallback={null}>
-          <BrainScene
-            nodes={nodes}
-            focusId={focus}
-            onHover={(id) => {
-              setHovered(id);
-              onHover?.(id);
-            }}
-          />
-        </Suspense>
+        {hydrated && (
+          <Suspense fallback={null}>
+            <BrainScene
+              nodes={nodes}
+              focusId={focus}
+              onHover={(id: string | null) => {
+                setHovered(id);
+                onHover?.(id);
+              }}
+            />
+          </Suspense>
+        )}
       </div>
 
       {/* hover tooltip pinned bottom-center */}
