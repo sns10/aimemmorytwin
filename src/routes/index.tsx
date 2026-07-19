@@ -96,7 +96,7 @@ function Dashboard() {
   // Translate the current tour step into concrete UI targets.
   const tourTargets = (() => {
     if (!tour) return { nodeId: null as string | null, lane: null as "learn" | "practice" | "apply" | "review" | null, cta: false };
-    const byMastery = [...data.consuming ?? data.concepts].slice(0).sort(
+    const byMastery = [...data.concepts].sort(
       (a, b) => b.state.mastery_probability - a.state.mastery_probability,
     );
     const consolidated = byMastery.find((c) => c.state.mastery_probability >= 0.8) ?? byMastery[0];
