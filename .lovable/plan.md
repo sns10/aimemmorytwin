@@ -1,69 +1,95 @@
+## Goal
 
-# MemoryTwin AI — Hackathon Build Plan
+Evolve MemoryTwin from a flat "10 concepts + quiz" demo into a structured course platform: **Subject → Chapter → Topic → Lesson → Quiz → Assignment**, wired to a **Learn → Practice → Master** progression driven by the existing BKT + FSRS engine.
 
-Full app on Lovable stack. Anonymous demo student, Chemistry (Class 10). BKT + FSRS forgetting curve running server-side, quiz loop with optimistic UI, dashboard with cached LLM daily briefing via Lovable AI.
+## New data model
 
-## Stack mapping (PRD → Lovable)
+Add four tables, keep the existing `students`, `knowledge_states`, `learning_events`, and repurpose `concepts` as **topics**.
 
-- FastAPI compute layer → TanStack `createServerFn` in `src/lib/*.functions.ts`.
-- PostgreSQL → Lovable Cloud (Supabase). Enable Cloud first.
-- LLM (Gemini/OpenAI) → Lovable AI Gateway, `google/gemini-3.5-flash`, called server-side.
-- No real auth. A single seeded anonymous `student_id` (UUID) stored in `localStorage` on the client; server functions accept it as input and validate against the demo student row.
+```text
+subjects        (id, name, description, sort_order)
+chapters        (id, subject_id, name, summary, sort_order)
+topics          (= renamed concepts; add chapter_id, learning_objectives, video_url, sort_order)
+lesson_content  (id, topic_id, kind: 'video'|'reading'|'summary', title, body, url, duration_min, sort_order)
+assignments     (id, topic_id, title, prompt, rubric, difficulty)
+assignment_submissions (id, student_id, assignment_id, response, ai_score, ai_feedback, created_at)
+```
 
-## Data model (single migration, with GRANTs)
+Keep `learning_events` as the single source of truth for BKT/FSRS updates, but add an `event_kind` column: `'lesson_view' | 'quiz_answer' | 'assignment_submit'` so practice history distinguishes activity types.
 
-- `concepts(id uuid pk, name text, subject text, difficulty numeric default 0.5, prerequisite_id uuid null, question text, options jsonb, correct_index int)` — concept + one canonical MCQ per concept to keep seed simple.
-- `students(id uuid pk, name text, daily_briefing text, briefing_generated_at timestamptz)`.
-- `knowledge_states(student_id uuid, concept_id uuid, mastery_probability numeric, memory_stability numeric, last_reviewed_at timestamptz, next_revision_at timestamptz, primary key(student_id, concept_id))`.
-- `learning_events(id uuid pk default gen_random_uuid(), student_id uuid, concept_id uuid, is_correct bool, response_time_ms int, difficulty numeric, created_at timestamptz default now())`.
-- Seed: 1 demo student "Alex", 10 Chemistry concepts (Atomic Structure, Atomic Mass, Isotopes, Ionic Bonds, Covalent Bonds, Periodic Table Trends, Acids & Bases, pH Scale, Chemical Reactions, Balancing Equations), each with one MCQ (5 options). Seed `knowledge_states` rows at cold-start P(L0)=0.15, S=1 day, next_revision_at = now(). All in the same migration.
-- RLS: enable on all tables. For the hackathon demo (no auth), grant SELECT/INSERT/UPDATE to `anon` with permissive policies scoped to reads/writes needed. This is intentional demo posture, documented in code comments.
+Seed: 1 subject (Class 10 Chemistry) → 3 chapters (Matter, Chemical Reactions, Acids/Bases/Salts) → 9 topics (3 per chapter) → 1 video + 1 reading per topic → the existing MCQ per topic → 1 short-answer assignment per topic.
 
-## Server functions (`src/lib/`)
+## Learn → Practice → Master state machine
 
-All use the server publishable Supabase client (no auth). Read `process.env` inside handlers.
+Each `(student, topic)` has a **stage**, computed from `knowledge_states`:
 
-- `getStudent.functions.ts` — returns demo student profile + cached `daily_briefing`.
-- `getRecommendations.functions.ts` — selects up to 5 concepts where `next_revision_at <= now()` ordered by lowest current retrievability R = exp(-t/S); joins concept question payload.
-- `submitEvent.functions.ts` — input: `{student_id, concept_id, is_correct, response_time_ms}`. Inside handler:
-  1. Insert row into `learning_events`.
-  2. Fetch prior `knowledge_states` row + concept difficulty.
-  3. Apply BKT update (formulas exactly from PRD §1.1, constants P(G)=0.20, P(S)=0.10, P(T)=0.05).
-  4. Apply FSRS stability update (correct: S*(1.5+D*0.5); incorrect: S*0.5). Compute `next_revision_at = now() + (-S_new * ln(0.8))` days.
-  5. Upsert `knowledge_states`. Return new mastery + next_revision_at.
-- `generateBriefing.functions.ts` — pulls mastered (>0.9) and at-risk (next_revision_at <= now or R<0.8) concept names, calls Lovable AI (`openai/gpt-5.5` per default, temperature default) with the PRD system prompt, writes result to `students.daily_briefing` + `briefing_generated_at`. Skips regeneration if `briefing_generated_at` is same UTC day AND no new events since.
+| Stage | Enter when | UI unlocks |
+|---|---|---|
+| **Learn** | no `lesson_view` event yet | Video + reading |
+| **Practice** | lesson viewed, mastery < 0.65 | Quiz drills (feeds BKT) |
+| **Apply** | mastery ≥ 0.65, no assignment submitted | Assignment (AI-graded) |
+| **Master** | mastery ≥ 0.85 AND assignment score ≥ 0.7 | Marked complete; enters spaced-review pool |
+| **Review** | mastered AND retrievability < 0.8 | Surfaces back in "Due today" |
 
-Note: PRD's "immediate 200 OK + background task" pattern isn't native to server functions. We keep the client optimistic and simply await the server fn in the background (fire-and-forget from the quiz UI). The UI never blocks on it.
+Chapter/subject progress = weighted average of topic stages. A chapter unlocks the next when ≥70% of its topics reach Master.
+
+## Server functions (new + refactored)
+
+`src/lib/course.functions.ts` (new):
+- `getCourseTree(studentId)` — subject → chapters → topics with per-topic stage + mastery
+- `getTopicWorkspace(studentId, topicId)` — lessons, quiz question, assignment, current stage, next action
+- `markLessonViewed(studentId, topicId, lessonId)` — writes `learning_events` with `event_kind='lesson_view'`
+- `submitAssignment(studentId, assignmentId, response)` — calls Lovable AI to score against rubric (0–1 + 2-sentence feedback), stores submission, writes `learning_events`, nudges BKT mastery
+
+Refactor `memorytwin.functions.ts`:
+- `submitEvent` → tag as `event_kind='quiz_answer'`
+- `getRecommendations` → prefer topics in **Practice** or **Review** stages, ordered by retrievability
 
 ## Routes
 
-- `/` (rewrite `src/routes/index.tsx`) — Dashboard.
-  - Hero card: LLM briefing (from `getStudent`), CTA "Start Today's 10-Minute Session" → navigates to `/quiz`.
-  - Below: knowledge grid — 10 concept cards with mastery % bar and "due for review" pill when `next_revision_at <= now()`.
-- `/quiz` — Quiz flow.
-  - Loads recommendations via TanStack Query in loader (`ensureQueryData`).
-  - 5 questions, 5-option MCQ. On answer: capture `response_time_ms`, optimistic +/-5% bar update, fire `submitEvent` (no await blocking next question), advance.
-  - End screen: session summary + "Back to dashboard". Triggers `generateBriefing` invalidation so next dashboard load is fresh.
+```text
+/                         Dashboard: AI briefing, retention chart, "Continue learning" card, due-today list
+/course                   Course tree: subject → chapters → topics with stage chips + progress bars
+/topic/$id                Topic workspace: tabs [Learn | Practice | Apply], shows current stage & next action
+/concept/$id              (kept) analytics deep-dive — link from topic workspace as "Memory stats"
+/quiz                     (kept) mixed-topic practice session driven by recommendations
+/history                  Timeline of all learning_events (lessons, quizzes, assignments)
+```
 
-## Frontend details
+The topic workspace is the heart of the flow: one page that guides the student through the right stage automatically. The dashboard's "Continue" button routes to whichever topic has the highest priority next-action.
 
-- TanStack Query for loaders + `useSuspenseQuery`. Each route has `errorComponent` + `notFoundComponent`.
-- Demo student id: generated once and stored in `localStorage`; if missing, server function ensures the seeded "Alex" row and returns its id.
-- Styling: keep it warm, not the default AI purple gradient — go with a paper/ink palette (warm off-white bg, deep navy text, single teal accent for progress/CTA). Semantic tokens in `src/styles.css` (no hardcoded colors in components). Serif display font (e.g., Fraunces) + Inter body via `<link>` in `__root.tsx`.
-- Update `__root.tsx` head: title "MemoryTwin AI — Your Study Digital Twin", proper description, og/twitter meta.
+## AI usage (Lovable AI Gateway, Gemini 2.5 Flash)
 
-## Secrets
+1. **Daily briefing** — already built, re-tuned to reference chapter/stage progress
+2. **Wrong-answer explanation** — already built
+3. **Assignment grader** — new: prompt with rubric + response → JSON `{score, feedback}`; score feeds into `learning_events` as a partial-credit signal (correct = score ≥ 0.7)
 
-- Ensure `LOVABLE_API_KEY` via `ai_gateway--create`.
+## UI
 
-## Out of scope for this build
+Keep the "warm paper and ink" theme. Add:
+- `StageBadge` — pill with Learn/Practice/Apply/Master/Review colors
+- `ProgressRing` — for chapter completion
+- `CourseTree` — collapsible chapter → topic list on `/course`
+- `TopicWorkspace` — tabbed layout with a persistent "Next step" CTA computed from stage
 
-- Real auth / multi-student.
-- Prerequisite graph traversal beyond storing `prerequisite_id`.
-- Streaming LLM, analytics dashboards, teacher views.
+## Build order
 
-## Technical risks / notes
+1. Migration: new tables + `event_kind` column + `chapter_id` on concepts (rename mentally to topics; keep table name for continuity).
+2. Data seed migration: 1 subject, 3 chapters, 9 topics (retire the current 10, seed fresh with chapter links), lessons, assignments.
+3. `course.functions.ts` + stage helper `src/lib/stage.ts`.
+4. Refactor `memorytwin.functions.ts` for `event_kind` + stage-aware recommendations.
+5. New routes `/course`, `/topic/$id`, `/history`. Update `/` dashboard "Continue" CTA. Update `/quiz` to write `event_kind='quiz_answer'`.
+6. Reusable components (StageBadge, ProgressRing, CourseTree).
+7. Typecheck + smoke test the flow end-to-end.
 
-- `student.server` split: keep BKT/FSRS math helpers inside handler bodies or in a `bkt.server.ts` file imported by `.functions.ts` (never at module scope of client-reachable files).
-- Migration MUST include `GRANT SELECT, INSERT, UPDATE ON public.<table> TO anon` for all four tables (demo posture).
-- Seed all math state at cold start so recommendations return results on first visit.
+## What stays
+
+- BKT + FSRS math (`bkt.server.ts`) — unchanged, still the mastery/retention engine
+- Retention chart, concept detail page, wrong-answer AI explanations, daily briefing
+- Anonymous demo student "Alex", permissive RLS (unchanged demo posture)
+
+## Non-goals for this pass
+
+- Real auth (still anonymous demo)
+- Prerequisite graph across topics (chapter ordering only)
+- Cron-driven briefing regeneration
