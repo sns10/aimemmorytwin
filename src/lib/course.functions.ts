@@ -177,6 +177,18 @@ export type AssignmentRow = {
   difficulty: number;
 };
 
+export type QuestionRow = {
+  id: string;
+  question: string;
+  options: string[];
+  correct_index: number;
+  difficulty: number;
+  tags: string[];
+  prerequisite_concept_ids: string[];
+  explanation: string | null;
+  sort_order: number;
+};
+
 export type SubmissionRow = {
   id: string;
   response: string;
@@ -196,8 +208,12 @@ export type TopicWorkspace = {
     options: string[];
     correct_index: number;
     difficulty: number;
+    concept_tags: string[];
+    prerequisite_id: string | null;
+    prerequisite_name: string | null;
   };
   lessons: LessonRow[];
+  questions: QuestionRow[];
   assignment: AssignmentRow | null;
   submissions: SubmissionRow[];
   state: {
@@ -213,11 +229,11 @@ export const getTopicWorkspace = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => TopicWsInput.parse(input))
   .handler(async ({ data }): Promise<TopicWorkspace> => {
     const supabase = makeClient();
-    const [tRes, lRes, aRes, sRes, subsRes, viewRes, stRes] = await Promise.all([
+    const [tRes, lRes, aRes, sRes, subsRes, viewRes, stRes, qRes] = await Promise.all([
       supabase
         .from("concepts")
         .select(
-          "id, name, subject, difficulty, question, options, correct_index, learning_objectives, chapter_id",
+          "id, name, subject, difficulty, question, options, correct_index, learning_objectives, chapter_id, concept_tags, prerequisite_id",
         )
         .eq("id", data.topic_id)
         .maybeSingle(),
@@ -253,6 +269,14 @@ export const getTopicWorkspace = createServerFn({ method: "GET" })
         .eq("event_kind", "lesson_view")
         .limit(1),
       supabase.from("chapters").select("id, name"),
+      supabase
+        .from("questions")
+        .select(
+          "id, question, options, correct_index, difficulty, tags, prerequisite_concept_ids, explanation, sort_order",
+        )
+        .eq("concept_id", data.topic_id)
+        .order("difficulty")
+        .order("sort_order"),
     ]);
     if (tRes.error) throw tRes.error;
     if (lRes.error) throw lRes.error;
@@ -261,11 +285,23 @@ export const getTopicWorkspace = createServerFn({ method: "GET" })
     if (subsRes.error) throw subsRes.error;
     if (viewRes.error) throw viewRes.error;
     if (stRes.error) throw stRes.error;
+    if (qRes.error) throw qRes.error;
     if (!tRes.data) throw new Error("Topic not found");
 
     const t = tRes.data;
     const chapterName =
       (stRes.data ?? []).find((c) => c.id === t.chapter_id)?.name ?? "";
+
+    // Look up prereq name (cheap: we may not have it in the chapters list)
+    let prereqName: string | null = null;
+    if (t.prerequisite_id) {
+      const { data: pre } = await supabase
+        .from("concepts")
+        .select("name")
+        .eq("id", t.prerequisite_id)
+        .maybeSingle();
+      prereqName = pre?.name ?? null;
+    }
 
     const mastery = Number(sRes.data?.mastery_probability ?? 0.15);
     const stability = Number(sRes.data?.memory_stability ?? 1);
@@ -311,8 +347,22 @@ export const getTopicWorkspace = createServerFn({ method: "GET" })
         options: t.options as string[],
         correct_index: t.correct_index,
         difficulty: Number(t.difficulty),
+        concept_tags: (t.concept_tags ?? []) as string[],
+        prerequisite_id: t.prerequisite_id,
+        prerequisite_name: prereqName,
       },
       lessons,
+      questions: (qRes.data ?? []).map((q) => ({
+        id: q.id,
+        question: q.question,
+        options: q.options as string[],
+        correct_index: q.correct_index,
+        difficulty: Number(q.difficulty),
+        tags: (q.tags ?? []) as string[],
+        prerequisite_concept_ids: (q.prerequisite_concept_ids ?? []) as string[],
+        explanation: q.explanation,
+        sort_order: q.sort_order,
+      })),
       assignment: aRes.data
         ? {
             id: aRes.data.id,
