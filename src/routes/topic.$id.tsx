@@ -376,6 +376,29 @@ function PracticePanel({
   const [correctCount, setCorrectCount] = useState(0);
   const startRef = useRef<number>(Date.now());
 
+  const storageKey = `mt:practice:${topicId}`;
+  // Load saved position on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const s = JSON.parse(raw) as { qIdx?: number; answered?: number; correctCount?: number };
+        if (typeof s.qIdx === "number") setQIdx(s.qIdx);
+        if (typeof s.answered === "number") setAnswered(s.answered);
+        if (typeof s.correctCount === "number") setCorrectCount(s.correctCount);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicId]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ qIdx, answered, correctCount }),
+      );
+    } catch {}
+  }, [storageKey, qIdx, answered, correctCount]);
+
   // Prefer the questions bank; fall back to the single concept-level question.
   const bank: QuestionRow[] =
     ws.questions.length > 0
