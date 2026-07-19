@@ -10,6 +10,7 @@ import {
 import { getCourseTree } from "@/lib/course.functions";
 import { RetentionChart } from "@/components/RetentionChart";
 import { StageBadge } from "@/components/StageBadge";
+import { StudyPlan } from "@/components/StudyPlan";
 import { nextActionFor, stageBlurb } from "@/lib/stage";
 
 const overviewQuery = queryOptions({
@@ -147,6 +148,9 @@ function Dashboard() {
             </div>
           )}
         </section>
+
+        {/* Study plan lanes */}
+        <StudyPlan subjects={subjects} />
 
         {/* Course progress */}
         <section className="mt-12">
