@@ -14,7 +14,167 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      concepts: {
+        Row: {
+          correct_index: number
+          created_at: string
+          difficulty: number
+          id: string
+          name: string
+          options: Json
+          prerequisite_id: string | null
+          question: string
+          sort_order: number
+          subject: string
+        }
+        Insert: {
+          correct_index: number
+          created_at?: string
+          difficulty?: number
+          id?: string
+          name: string
+          options: Json
+          prerequisite_id?: string | null
+          question: string
+          sort_order?: number
+          subject?: string
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          difficulty?: number
+          id?: string
+          name?: string
+          options?: Json
+          prerequisite_id?: string | null
+          question?: string
+          sort_order?: number
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concepts_prerequisite_id_fkey"
+            columns: ["prerequisite_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_states: {
+        Row: {
+          concept_id: string
+          last_reviewed_at: string | null
+          mastery_probability: number
+          memory_stability: number
+          next_revision_at: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          concept_id: string
+          last_reviewed_at?: string | null
+          mastery_probability?: number
+          memory_stability?: number
+          next_revision_at?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          concept_id?: string
+          last_reviewed_at?: string | null
+          mastery_probability?: number
+          memory_stability?: number
+          next_revision_at?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_states_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_states_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_events: {
+        Row: {
+          concept_id: string
+          created_at: string
+          difficulty: number
+          id: string
+          is_correct: boolean
+          response_time_ms: number
+          student_id: string
+        }
+        Insert: {
+          concept_id: string
+          created_at?: string
+          difficulty?: number
+          id?: string
+          is_correct: boolean
+          response_time_ms?: number
+          student_id: string
+        }
+        Update: {
+          concept_id?: string
+          created_at?: string
+          difficulty?: number
+          id?: string
+          is_correct?: boolean
+          response_time_ms?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_events_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_events_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          briefing_generated_at: string | null
+          created_at: string
+          daily_briefing: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          briefing_generated_at?: string | null
+          created_at?: string
+          daily_briefing?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          briefing_generated_at?: string | null
+          created_at?: string
+          daily_briefing?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
