@@ -2,10 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, XCircle, Brain } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Brain, Sparkles } from "lucide-react";
 import {
   getRecommendations,
   submitEvent,
+  explainMisconception,
   type ConceptWithState,
 } from "@/lib/memorytwin.functions";
 
@@ -40,6 +41,7 @@ function Quiz() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const submit = useServerFn(submitEvent);
+  const explain = useServerFn(explainMisconception);
 
   const questions = useMemo<LocalConcept[]>(
     () => recs.map((c) => ({ ...c, _optimisticMastery: c.state.mastery_probability })),
@@ -53,6 +55,8 @@ function Quiz() {
   const [optimistic, setOptimistic] = useState<number[]>(
     () => questions.map((q) => q.state.mastery_probability),
   );
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [explaining, setExplaining] = useState(false);
   const startRef = useRef<number>(Date.now());
 
   if (questions.length === 0) {
@@ -104,12 +108,26 @@ function Quiz() {
         response_time_ms: elapsed,
       },
     }).catch((err) => console.error("submitEvent failed", err));
+
+    if (!isCorrect) {
+      setExplaining(true);
+      setExplanation(null);
+      explain({ data: { concept_id: q.id, chosen_index: choice } })
+        .then((r) => setExplanation(r.explanation))
+        .catch((err) => {
+          console.error("explain failed", err);
+          setExplanation("Couldn't fetch an explanation just now.");
+        })
+        .finally(() => setExplaining(false));
+    }
   };
 
   const next = () => {
     setIdx((i) => i + 1);
     setSelected(null);
     setLocked(false);
+    setExplanation(null);
+    setExplaining(false);
     startRef.current = Date.now();
   };
 
@@ -182,6 +200,22 @@ function Quiz() {
           </div>
 
           {locked && (
+            <>
+            {!isCorrect && (
+              <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="text-[11px] font-medium uppercase tracking-wide">
+                    Why you missed it
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-foreground">
+                  {explaining
+                    ? "Thinking through your answer…"
+                    : (explanation ?? "…")}
+                </p>
+              </div>
+            )}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
                 {isCorrect
@@ -198,6 +232,7 @@ function Quiz() {
                 {idx + 1 === questions.length ? "See summary" : "Next question"}
               </button>
             </div>
+            </>
           )}
         </div>
       </main>
