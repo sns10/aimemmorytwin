@@ -16,6 +16,7 @@ import {
   getTopicWorkspace,
   markLessonViewed,
   submitAssignment,
+  type TopicWorkspace,
 } from "@/lib/course.functions";
 import {
   submitEvent,
@@ -165,7 +166,7 @@ function LearnPanel({
   onOpenLesson,
   onDone,
 }: {
-  ws: ReturnType<typeof useSuspenseQuery<ReturnType<typeof workspaceQuery>>>["data"];
+  ws: TopicWorkspace;
   onOpenLesson: () => void;
   onDone: () => void;
 }) {
@@ -221,7 +222,7 @@ function PracticePanel({
   ws,
   topicId,
 }: {
-  ws: ReturnType<typeof useSuspenseQuery<ReturnType<typeof workspaceQuery>>>["data"];
+  ws: TopicWorkspace;
   topicId: string;
 }) {
   const qc = useQueryClient();
@@ -341,7 +342,7 @@ function ApplyPanel({
   ws,
   topicId,
 }: {
-  ws: ReturnType<typeof useSuspenseQuery<ReturnType<typeof workspaceQuery>>>["data"];
+  ws: TopicWorkspace;
   topicId: string;
 }) {
   const qc = useQueryClient();
