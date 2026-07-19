@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ArrowLeft,
   Brain,
@@ -11,6 +11,11 @@ import {
   CheckCircle2,
   XCircle,
   BarChart3,
+  BookOpen,
+  Dumbbell,
+  Feather,
+  Trophy,
+  Save,
 } from "lucide-react";
 import {
   getTopicWorkspace,
@@ -128,6 +133,9 @@ function TopicPage() {
           </div>
         )}
 
+        {/* Stage checkpoints — independent lanes */}
+        <StageCheckpoints ws={ws} active={tab} onPick={setTab} />
+
         {/* Tabs */}
         <div className="mt-8 flex gap-2 rounded-full border border-border bg-card p-1 text-sm">
           {(["learn", "practice", "apply"] as Tab[]).map((t) => (
@@ -154,6 +162,12 @@ function TopicPage() {
           {tab === "apply" && <ApplyPanel ws={ws} topicId={id} />}
         </div>
 
+        <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
+          <Save className="h-3.5 w-3.5" />
+          You can leave any time — each lane saves independently, so you don't
+          have to finish Learn, Practice, and Apply in one go.
+        </p>
+
         <div className="mt-10 border-t border-border pt-6">
           <Link
             to="/concept/$id"
@@ -175,6 +189,113 @@ function StatCard({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div className="mt-1 font-serif text-2xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function StageCheckpoints({
+  ws,
+  active,
+  onPick,
+}: {
+  ws: TopicWorkspace;
+  active: Tab;
+  onPick: (t: Tab) => void;
+}) {
+  const learnDone = ws.lessons[0]?.viewed ?? false;
+  const practicePct = Math.min(100, Math.round((ws.state.mastery / 0.65) * 100));
+  const practiceDone = ws.state.mastery >= 0.65;
+  const bestScore = ws.submissions[0]?.ai_score ?? 0;
+  const applyDone = bestScore >= 0.7;
+  const mastered = ws.stage === "master";
+
+  const items: {
+    key: Tab | "master";
+    label: string;
+    sub: string;
+    icon: React.ReactNode;
+    done: boolean;
+    pct: number;
+    clickable: boolean;
+  }[] = [
+    {
+      key: "learn",
+      label: "Learn",
+      sub: learnDone ? "Lesson viewed" : "Build awareness",
+      icon: <BookOpen className="h-3.5 w-3.5" />,
+      done: learnDone,
+      pct: learnDone ? 100 : 0,
+      clickable: true,
+    },
+    {
+      key: "practice",
+      label: "Practice",
+      sub: practiceDone ? "Mastery 65%+" : `Mastery ${Math.round(ws.state.mastery * 100)}%`,
+      icon: <Dumbbell className="h-3.5 w-3.5" />,
+      done: practiceDone,
+      pct: practicePct,
+      clickable: true,
+    },
+    {
+      key: "apply",
+      label: "Apply",
+      sub: applyDone
+        ? `Best ${Math.round(bestScore * 100)}%`
+        : bestScore > 0
+          ? `Best ${Math.round(bestScore * 100)}%`
+          : "1 assignment",
+      icon: <Feather className="h-3.5 w-3.5" />,
+      done: applyDone,
+      pct: Math.round(bestScore * 100),
+      clickable: true,
+    },
+    {
+      key: "master",
+      label: "Master",
+      sub: mastered ? "Locked in" : "Retain long-term",
+      icon: <Trophy className="h-3.5 w-3.5" />,
+      done: mastered,
+      pct: mastered ? 100 : 0,
+      clickable: false,
+    },
+  ];
+
+  return (
+    <div className="mt-8 grid gap-2 sm:grid-cols-4">
+      {items.map((it) => {
+        const isActive = it.clickable && active === it.key;
+        return (
+          <button
+            key={it.key}
+            onClick={() => it.clickable && onPick(it.key as Tab)}
+            disabled={!it.clickable}
+            className={
+              "rounded-xl border p-3 text-left transition " +
+              (isActive
+                ? "border-primary bg-primary/5"
+                : it.done
+                  ? "border-emerald-500/30 bg-emerald-500/5"
+                  : "border-border bg-card hover:border-primary/40") +
+              (it.clickable ? " cursor-pointer" : " cursor-default opacity-70")
+            }
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
+                {it.icon}
+                {it.label}
+              </div>
+              {it.done && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
+            </div>
+            <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={`h-full rounded-full ${it.done ? "bg-emerald-500" : "bg-primary"}`}
+                style={{ width: `${Math.max(3, it.pct)}%` }}
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">{it.sub}</p>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -254,6 +375,29 @@ function PracticePanel({
   const [answered, setAnswered] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const startRef = useRef<number>(Date.now());
+
+  const storageKey = `mt:practice:${topicId}`;
+  // Load saved position on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const s = JSON.parse(raw) as { qIdx?: number; answered?: number; correctCount?: number };
+        if (typeof s.qIdx === "number") setQIdx(s.qIdx);
+        if (typeof s.answered === "number") setAnswered(s.answered);
+        if (typeof s.correctCount === "number") setCorrectCount(s.correctCount);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicId]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ qIdx, answered, correctCount }),
+      );
+    } catch {}
+  }, [storageKey, qIdx, answered, correctCount]);
 
   // Prefer the questions bank; fall back to the single concept-level question.
   const bank: QuestionRow[] =
