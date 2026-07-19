@@ -1,0 +1,1 @@
+UPDATE public.students SET daily_briefing = NULL, briefing_generated_at = NULL WHERE id = '11111111-1111-1111-1111-111111111111';
