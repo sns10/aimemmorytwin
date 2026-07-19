@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ArrowLeft,
   Brain,
@@ -11,6 +11,11 @@ import {
   CheckCircle2,
   XCircle,
   BarChart3,
+  BookOpen,
+  Dumbbell,
+  Feather,
+  Trophy,
+  Save,
 } from "lucide-react";
 import {
   getTopicWorkspace,
@@ -128,6 +133,9 @@ function TopicPage() {
           </div>
         )}
 
+        {/* Stage checkpoints — independent lanes */}
+        <StageCheckpoints ws={ws} active={tab} onPick={setTab} />
+
         {/* Tabs */}
         <div className="mt-8 flex gap-2 rounded-full border border-border bg-card p-1 text-sm">
           {(["learn", "practice", "apply"] as Tab[]).map((t) => (
@@ -153,6 +161,12 @@ function TopicPage() {
           {tab === "practice" && <PracticePanel ws={ws} topicId={id} />}
           {tab === "apply" && <ApplyPanel ws={ws} topicId={id} />}
         </div>
+
+        <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
+          <Save className="h-3.5 w-3.5" />
+          You can leave any time — each lane saves independently, so you don't
+          have to finish Learn, Practice, and Apply in one go.
+        </p>
 
         <div className="mt-10 border-t border-border pt-6">
           <Link
