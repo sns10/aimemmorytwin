@@ -248,6 +248,152 @@ export const submitEvent = createServerFn({ method: "POST" })
     };
   });
 
+const ExplainInput = z.object({
+  concept_id: z.string().uuid(),
+  chosen_index: z.number().int().min(0).max(10),
+});
+
+export const explainMisconception = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => ExplainInput.parse(input))
+  .handler(async ({ data }): Promise<{ explanation: string }> => {
+    const supabase = makeClient();
+    const { data: concept, error } = await supabase
+      .from("concepts")
+      .select("name, subject, question, options, correct_index")
+      .eq("id", data.concept_id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!concept) throw new Error("Unknown concept");
+
+    const options = concept.options as string[];
+    const chosen = options[data.chosen_index] ?? "(no answer)";
+    const correct = options[concept.correct_index] ?? "(unknown)";
+
+    const fallback = `The correct answer is "${correct}". Review the definition of ${concept.name} and how it differs from "${chosen}".`;
+
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) return { explanation: fallback };
+
+    try {
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a warm 10th-grade Chemistry tutor. In exactly 2 short sentences: (1) name the specific misconception behind the student's wrong choice, (2) give the key fact that fixes it. Do not restate the question. Do not say 'correct answer'.",
+            },
+            {
+              role: "user",
+              content: `Concept: ${concept.name}
+Question: ${concept.question}
+Student picked: "${chosen}"
+Actually correct: "${correct}"`,
+            },
+          ],
+        }),
+      });
+      if (!res.ok) {
+        console.error("Explain AI failed:", res.status, await res.text());
+        return { explanation: fallback };
+      }
+      const json = (await res.json()) as {
+        choices?: { message?: { content?: string } }[];
+      };
+      const text = json.choices?.[0]?.message?.content?.trim();
+      return { explanation: text || fallback };
+    } catch (err) {
+      console.error("Explain AI error:", err);
+      return { explanation: fallback };
+    }
+  });
+
+const ConceptDetailInput = z.object({ concept_id: z.string().uuid() });
+
+export type LearningEventRow = {
+  id: string;
+  is_correct: boolean;
+  response_time_ms: number;
+  created_at: string;
+};
+
+export const getConceptDetail = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => ConceptDetailInput.parse(input))
+  .handler(
+    async ({
+      data,
+    }): Promise<{
+      concept: ConceptRow;
+      state: KnowledgeRow;
+      events: LearningEventRow[];
+    }> => {
+      const supabase = makeClient();
+      const [cRes, sRes, eRes] = await Promise.all([
+        supabase
+          .from("concepts")
+          .select("id, name, subject, difficulty, question, options, correct_index, sort_order")
+          .eq("id", data.concept_id)
+          .maybeSingle(),
+        supabase
+          .from("knowledge_states")
+          .select("concept_id, mastery_probability, memory_stability, last_reviewed_at, next_revision_at")
+          .eq("student_id", DEMO_STUDENT_ID)
+          .eq("concept_id", data.concept_id)
+          .maybeSingle(),
+        supabase
+          .from("learning_events")
+          .select("id, is_correct, response_time_ms, created_at")
+          .eq("student_id", DEMO_STUDENT_ID)
+          .eq("concept_id", data.concept_id)
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ]);
+      if (cRes.error) throw cRes.error;
+      if (sRes.error) throw sRes.error;
+      if (eRes.error) throw eRes.error;
+      if (!cRes.data) throw new Error("Concept not found");
+
+      const c = cRes.data;
+      const now = new Date().toISOString();
+      const state: KnowledgeRow = sRes.data
+        ? {
+            concept_id: sRes.data.concept_id,
+            mastery_probability: Number(sRes.data.mastery_probability),
+            memory_stability: Number(sRes.data.memory_stability),
+            last_reviewed_at: sRes.data.last_reviewed_at,
+            next_revision_at: sRes.data.next_revision_at,
+          }
+        : {
+            concept_id: c.id,
+            mastery_probability: 0.15,
+            memory_stability: 1,
+            last_reviewed_at: null,
+            next_revision_at: now,
+          };
+
+      return {
+        concept: {
+          id: c.id,
+          name: c.name,
+          subject: c.subject,
+          difficulty: Number(c.difficulty),
+          question: c.question,
+          options: c.options as string[],
+          correct_index: c.correct_index,
+          sort_order: c.sort_order,
+        },
+        state,
+        events: (eRes.data ?? []) as LearningEventRow[],
+      };
+    },
+  );
+
 export const generateDailyBriefing = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ briefing: string; cached: boolean }> => {
     const supabase = makeClient();
