@@ -14,44 +14,181 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_submissions: {
+        Row: {
+          ai_feedback: string | null
+          ai_score: number
+          assignment_id: string
+          concept_id: string
+          created_at: string
+          id: string
+          response: string
+          student_id: string
+        }
+        Insert: {
+          ai_feedback?: string | null
+          ai_score?: number
+          assignment_id: string
+          concept_id: string
+          created_at?: string
+          id?: string
+          response: string
+          student_id: string
+        }
+        Update: {
+          ai_feedback?: string | null
+          ai_score?: number
+          assignment_id?: string
+          concept_id?: string
+          created_at?: string
+          id?: string
+          response?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_submissions_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignments: {
+        Row: {
+          concept_id: string
+          created_at: string
+          difficulty: number
+          id: string
+          prompt: string
+          rubric: string
+          title: string
+        }
+        Insert: {
+          concept_id: string
+          created_at?: string
+          difficulty?: number
+          id?: string
+          prompt: string
+          rubric: string
+          title: string
+        }
+        Update: {
+          concept_id?: string
+          created_at?: string
+          difficulty?: number
+          id?: string
+          prompt?: string
+          rubric?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chapters: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          subject_id: string
+          summary: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          subject_id: string
+          summary?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          subject_id?: string
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapters_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       concepts: {
         Row: {
+          chapter_id: string | null
           correct_index: number
           created_at: string
           difficulty: number
           id: string
+          learning_objectives: string | null
           name: string
           options: Json
           prerequisite_id: string | null
           question: string
           sort_order: number
           subject: string
+          video_url: string | null
         }
         Insert: {
+          chapter_id?: string | null
           correct_index: number
           created_at?: string
           difficulty?: number
           id?: string
+          learning_objectives?: string | null
           name: string
           options: Json
           prerequisite_id?: string | null
           question: string
           sort_order?: number
           subject?: string
+          video_url?: string | null
         }
         Update: {
+          chapter_id?: string | null
           correct_index?: number
           created_at?: string
           difficulty?: number
           id?: string
+          learning_objectives?: string | null
           name?: string
           options?: Json
           prerequisite_id?: string | null
           question?: string
           sort_order?: number
           subject?: string
+          video_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "concepts_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "concepts_prerequisite_id_fkey"
             columns: ["prerequisite_id"]
@@ -111,6 +248,7 @@ export type Database = {
           concept_id: string
           created_at: string
           difficulty: number
+          event_kind: string
           id: string
           is_correct: boolean
           response_time_ms: number
@@ -120,6 +258,7 @@ export type Database = {
           concept_id: string
           created_at?: string
           difficulty?: number
+          event_kind?: string
           id?: string
           is_correct: boolean
           response_time_ms?: number
@@ -129,6 +268,7 @@ export type Database = {
           concept_id?: string
           created_at?: string
           difficulty?: number
+          event_kind?: string
           id?: string
           is_correct?: boolean
           response_time_ms?: number
@@ -147,6 +287,50 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_content: {
+        Row: {
+          body: string | null
+          concept_id: string
+          created_at: string
+          duration_min: number
+          id: string
+          kind: string
+          sort_order: number
+          title: string
+          url: string | null
+        }
+        Insert: {
+          body?: string | null
+          concept_id: string
+          created_at?: string
+          duration_min?: number
+          id?: string
+          kind: string
+          sort_order?: number
+          title: string
+          url?: string | null
+        }
+        Update: {
+          body?: string | null
+          concept_id?: string
+          created_at?: string
+          duration_min?: number
+          id?: string
+          kind?: string
+          sort_order?: number
+          title?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_content_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
             referencedColumns: ["id"]
           },
         ]
@@ -172,6 +356,30 @@ export type Database = {
           daily_briefing?: string | null
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      subjects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
