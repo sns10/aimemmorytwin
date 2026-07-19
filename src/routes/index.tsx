@@ -56,10 +56,19 @@ function Dashboard() {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [today, setToday] = useState<string>("");
   const [greet, setGreet] = useState<string>("hi");
+  const [tour, setTour] = useState<{ step: number; cycle: number } | null>(null);
   useEffect(() => {
     setToday(new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" }));
     const h = new Date().getHours();
     setGreet(h < 5 ? "night" : h < 12 ? "morning" : h < 18 ? "afternoon" : "evening");
+  }, []);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{ step: number; cycle: number }>;
+      setTour(ev.detail.step < 0 ? null : ev.detail);
+    };
+    window.addEventListener("memorytwin:tour-step", handler);
+    return () => window.removeEventListener("memorytwin:tour-step", handler);
   }, []);
 
   const allTopics = subjects.flatMap((s) => s.chapters.flatMap((c) => c.topics));
@@ -83,6 +92,40 @@ function Dashboard() {
     })
     .sort((a, b) => a.R - b.R)
     .slice(0, 4);
+
+  // Translate the current tour step into concrete UI targets.
+  const tourTargets = (() => {
+    if (!tour) return { nodeId: null as string | null, lane: null as "learn" | "practice" | "apply" | "review" | null, cta: false };
+    const byMastery = [...data.concepts].sort(
+      (a, b) => b.state.mastery_probability - a.state.mastery_probability,
+    );
+    const consolidated = byMastery.find((c) => c.state.mastery_probability >= 0.8) ?? byMastery[0];
+    const building = byMastery.find(
+      (c) => c.state.mastery_probability >= 0.4 && c.state.mastery_probability < 0.8,
+    ) ?? byMastery[Math.floor(byMastery.length / 2)];
+    const fading = atRisk[0]?.c ?? byMastery[byMastery.length - 1];
+    switch (tour.step) {
+      case 0:
+        return { nodeId: consolidated?.id ?? null, lane: null, cta: false };
+      case 1: {
+        const rotation = [consolidated?.id, building?.id, fading?.id].filter(Boolean) as string[];
+        return { nodeId: rotation[tour.cycle % rotation.length] ?? null, lane: null, cta: false };
+      }
+      case 2:
+        return { nodeId: fading?.id ?? null, lane: null, cta: false };
+      case 3: {
+        const lanes = ["learn", "practice", "apply", "review"] as const;
+        return { nodeId: null, lane: lanes[tour.cycle % 4], cta: false };
+      }
+      case 4:
+        return { nodeId: nextTopic ? (data.concepts.find((c) => c.id === nextTopic.id)?.id ?? null) : null, lane: null, cta: true };
+      default:
+        return { nodeId: null, lane: null, cta: false };
+    }
+  })();
+
+  const brainFocus = hoverId ?? tourTargets.nodeId;
+  const ctaHighlight = tourTargets.cta;
 
   return (
     <div className="min-h-screen bg-secondary/60">
@@ -123,7 +166,7 @@ function Dashboard() {
           <section className="relative min-h-[560px] overflow-hidden rounded-sm border border-border bg-card shadow-sm lg:h-[calc(100vh-6.5rem)]">
             <BrainVisualization
               concepts={data.concepts}
-              activeId={hoverId}
+              activeId={brainFocus}
               onHover={setHoverId}
             />
           </section>
@@ -165,7 +208,10 @@ function Dashboard() {
               <Link
                 to={nextAction.href as "/topic/$id"}
                 params={{ id: nextTopic.id }}
-                className="group flex items-center justify-between border border-border bg-primary px-5 py-4 text-primary-foreground transition hover:bg-foreground"
+                className={
+                  "group flex items-center justify-between border border-border bg-primary px-5 py-4 text-primary-foreground transition hover:bg-foreground " +
+                  (ctaHighlight ? "ring-4 ring-primary/30 ring-offset-2 ring-offset-secondary animate-pulse" : "")
+                }
               >
                 <div>
                   <div className="ink-caps text-primary-foreground/70">Continue · {nextAction.label}</div>
@@ -208,7 +254,7 @@ function Dashboard() {
             )}
 
             {/* Study plan lanes — compact */}
-            <StudyPlan subjects={subjects} />
+            <StudyPlan subjects={subjects} highlightLane={tourTargets.lane} />
 
             {/* Course quick nav */}
             <div className="border border-border bg-card">

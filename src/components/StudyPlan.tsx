@@ -95,7 +95,13 @@ const LANES: Lane[] = [
   },
 ];
 
-export function StudyPlan({ subjects }: { subjects: SubjectTree[] }) {
+export function StudyPlan({
+  subjects,
+  highlightLane,
+}: {
+  subjects: SubjectTree[];
+  highlightLane?: LaneKey | null;
+}) {
   const now = Date.now();
   const allTopics: TopicNode[] = subjects.flatMap((s) =>
     s.chapters.flatMap((c) => c.topics),
@@ -154,7 +160,15 @@ export function StudyPlan({ subjects }: { subjects: SubjectTree[] }) {
 
           const first = ranked[0];
           return (
-            <div key={lane.key} className={`rounded-2xl border p-5 ${lane.accent}`}>
+            <div
+              key={lane.key}
+              className={
+                `rounded-2xl border p-5 transition ${lane.accent} ` +
+                (highlightLane === lane.key
+                  ? "ring-4 ring-primary/40 ring-offset-2 ring-offset-secondary scale-[1.01] shadow-lg"
+                  : "")
+              }
+            >
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2 text-foreground">
