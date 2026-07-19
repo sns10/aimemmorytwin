@@ -7,6 +7,7 @@ import {
   generateDailyBriefing,
   type ConceptWithState,
 } from "@/lib/memorytwin.functions";
+import { RetentionChart } from "@/components/RetentionChart";
 
 const overviewQuery = queryOptions({
   queryKey: ["overview"],
@@ -108,6 +109,10 @@ function Dashboard() {
         </section>
 
         {/* Knowledge grid */}
+        <section className="mt-12">
+          <RetentionChart concepts={data.concepts} />
+        </section>
+
         <section className="mt-12">
           <h2 className="font-serif text-2xl font-semibold">Your knowledge twin</h2>
           <p className="mt-1 text-sm text-muted-foreground">
