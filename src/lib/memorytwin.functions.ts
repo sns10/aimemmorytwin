@@ -174,6 +174,7 @@ const SubmitEventInput = z.object({
   concept_id: z.string().uuid(),
   is_correct: z.boolean(),
   response_time_ms: z.number().int().min(0).max(600_000),
+  question_id: z.string().uuid().optional(),
 });
 
 export const submitEvent = createServerFn({ method: "POST" })
@@ -184,30 +185,67 @@ export const submitEvent = createServerFn({ method: "POST" })
     );
     const supabase = makeClient();
 
-    const [{ data: concept, error: cErr }, { data: state, error: sErr }] =
-      await Promise.all([
-        supabase
-          .from("concepts")
-          .select("id, difficulty")
-          .eq("id", data.concept_id)
-          .maybeSingle(),
-        supabase
-          .from("knowledge_states")
-          .select("mastery_probability, memory_stability")
-          .eq("student_id", DEMO_STUDENT_ID)
-          .eq("concept_id", data.concept_id)
-          .maybeSingle(),
-      ]);
-    if (cErr) throw cErr;
-    if (sErr) throw sErr;
+    const [conceptRes, stateRes, questionRes] = await Promise.all([
+      supabase
+        .from("concepts")
+        .select(
+          "id, difficulty, prerequisite_id, p_init, p_learn, p_guess, p_slip",
+        )
+        .eq("id", data.concept_id)
+        .maybeSingle(),
+      supabase
+        .from("knowledge_states")
+        .select("mastery_probability, memory_stability")
+        .eq("student_id", DEMO_STUDENT_ID)
+        .eq("concept_id", data.concept_id)
+        .maybeSingle(),
+      data.question_id
+        ? supabase
+            .from("questions")
+            .select("id, difficulty")
+            .eq("id", data.question_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null } as const),
+    ]);
+    if (conceptRes.error) throw conceptRes.error;
+    if (stateRes.error) throw stateRes.error;
+    if (questionRes.error) throw questionRes.error;
+    const concept = conceptRes.data;
     if (!concept) throw new Error("Unknown concept");
+    const state = stateRes.data;
+    const question = questionRes.data;
 
-    const priorMastery = Number(state?.mastery_probability ?? 0.15);
+    // Prerequisite mastery for gated learning rate
+    let prereqMastery = 1;
+    if (concept.prerequisite_id) {
+      const { data: pre } = await supabase
+        .from("knowledge_states")
+        .select("mastery_probability")
+        .eq("student_id", DEMO_STUDENT_ID)
+        .eq("concept_id", concept.prerequisite_id)
+        .maybeSingle();
+      prereqMastery = Number(pre?.mastery_probability ?? 0.15);
+    }
+
+    const priorMastery = Number(state?.mastery_probability ?? Number(concept.p_init));
     const priorStability = Number(state?.memory_stability ?? 1);
-    const difficulty = Number(concept.difficulty);
+    const itemDifficulty = Number(question?.difficulty ?? concept.difficulty);
 
-    const newMastery = updateMasteryBKT(priorMastery, data.is_correct);
-    const newStability = updateStabilityFSRS(priorStability, difficulty, data.is_correct);
+    const newMastery = updateMasteryBKT(priorMastery, data.is_correct, {
+      itemDifficulty,
+      prereqMastery,
+      params: {
+        pInit: Number(concept.p_init),
+        pLearn: Number(concept.p_learn),
+        pGuess: Number(concept.p_guess),
+        pSlip: Number(concept.p_slip),
+      },
+    });
+    const newStability = updateStabilityFSRS(
+      priorStability,
+      itemDifficulty,
+      data.is_correct,
+    );
     const now = new Date();
     const nextDate = nextRevisionDate(newStability, now);
 
@@ -217,7 +255,10 @@ export const submitEvent = createServerFn({ method: "POST" })
         concept_id: data.concept_id,
         is_correct: data.is_correct,
         response_time_ms: data.response_time_ms,
-        difficulty,
+        difficulty: itemDifficulty,
+        question_id: data.question_id ?? null,
+        pre_mastery: priorMastery,
+        post_mastery: newMastery,
       }),
       supabase.from("knowledge_states").upsert(
         {
@@ -251,25 +292,44 @@ export const submitEvent = createServerFn({ method: "POST" })
 const ExplainInput = z.object({
   concept_id: z.string().uuid(),
   chosen_index: z.number().int().min(0).max(10),
+  question_id: z.string().uuid().optional(),
 });
 
 export const explainMisconception = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ExplainInput.parse(input))
   .handler(async ({ data }): Promise<{ explanation: string }> => {
     const supabase = makeClient();
-    const { data: concept, error } = await supabase
-      .from("concepts")
-      .select("name, subject, question, options, correct_index")
-      .eq("id", data.concept_id)
-      .maybeSingle();
+    const [{ data: concept, error }, qRes] = await Promise.all([
+      supabase
+        .from("concepts")
+        .select("name, subject, question, options, correct_index")
+        .eq("id", data.concept_id)
+        .maybeSingle(),
+      data.question_id
+        ? supabase
+            .from("questions")
+            .select("question, options, correct_index, explanation")
+            .eq("id", data.question_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null } as const),
+    ]);
     if (error) throw error;
+    if (qRes.error) throw qRes.error;
     if (!concept) throw new Error("Unknown concept");
 
-    const options = concept.options as string[];
+    const item = qRes.data ?? {
+      question: concept.question,
+      options: concept.options,
+      correct_index: concept.correct_index,
+      explanation: null as string | null,
+    };
+    const options = item.options as string[];
     const chosen = options[data.chosen_index] ?? "(no answer)";
-    const correct = options[concept.correct_index] ?? "(unknown)";
+    const correct = options[item.correct_index] ?? "(unknown)";
 
-    const fallback = `The correct answer is "${correct}". Review the definition of ${concept.name} and how it differs from "${chosen}".`;
+    const fallback =
+      item.explanation ??
+      `The correct answer is "${correct}". Review ${concept.name} and how it differs from "${chosen}".`;
 
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) return { explanation: fallback };
@@ -292,7 +352,7 @@ export const explainMisconception = createServerFn({ method: "POST" })
             {
               role: "user",
               content: `Concept: ${concept.name}
-Question: ${concept.question}
+Question: ${item.question}
 Student picked: "${chosen}"
 Actually correct: "${correct}"`,
             },
