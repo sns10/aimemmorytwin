@@ -24,6 +24,7 @@ import {
 } from "@/lib/memorytwin.functions";
 import { StageBadge } from "@/components/StageBadge";
 import { stageBlurb } from "@/lib/stage";
+import type { QuestionRow } from "@/lib/course.functions";
 
 const workspaceQuery = (id: string) =>
   queryOptions({
@@ -109,6 +110,23 @@ function TopicPage() {
           />
         </div>
         <p className="mt-3 text-xs text-muted-foreground">{stageBlurb(ws.stage)}</p>
+        {ws.topic.prerequisite_name && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Builds on <span className="font-medium text-foreground">{ws.topic.prerequisite_name}</span>.
+          </p>
+        )}
+        {ws.topic.concept_tags.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {ws.topic.concept_tags.map((t) => (
+              <span
+                key={t}
+                className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mt-8 flex gap-2 rounded-full border border-border bg-card p-1 text-sm">
@@ -232,10 +250,31 @@ function PracticePanel({
   const [locked, setLocked] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explaining, setExplaining] = useState(false);
+  const [qIdx, setQIdx] = useState(0);
+  const [answered, setAnswered] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
   const startRef = useRef<number>(Date.now());
 
-  const q = ws.topic;
+  // Prefer the questions bank; fall back to the single concept-level question.
+  const bank: QuestionRow[] =
+    ws.questions.length > 0
+      ? ws.questions
+      : [
+          {
+            id: ws.topic.id,
+            question: ws.topic.question,
+            options: ws.topic.options,
+            correct_index: ws.topic.correct_index,
+            difficulty: ws.topic.difficulty,
+            tags: [],
+            prerequisite_concept_ids: [],
+            explanation: null,
+            sort_order: 0,
+          },
+        ];
+  const q = bank[qIdx % bank.length];
   const isCorrect = selected === q.correct_index;
+  const isFromBank = ws.questions.length > 0;
 
   const onSelect = (choice: number) => {
     if (locked) return;
@@ -243,8 +282,15 @@ function PracticePanel({
     setLocked(true);
     const correct = choice === q.correct_index;
     const elapsed = Date.now() - startRef.current;
+    setAnswered((n) => n + 1);
+    if (correct) setCorrectCount((n) => n + 1);
     submit({
-      data: { concept_id: topicId, is_correct: correct, response_time_ms: elapsed },
+      data: {
+        concept_id: topicId,
+        is_correct: correct,
+        response_time_ms: elapsed,
+        ...(isFromBank ? { question_id: q.id } : {}),
+      },
     })
       .then(() => {
         qc.invalidateQueries({ queryKey: ["topic-ws", topicId] });
@@ -261,18 +307,57 @@ function PracticePanel({
     }
   };
 
-  const reset = () => {
+  const nextQuestion = () => {
+    setSelected(null);
+    setLocked(false);
+    setExplanation(null);
+    startRef.current = Date.now();
+    setQIdx((i) => (i + 1) % bank.length);
+  };
+
+  const retry = () => {
     setSelected(null);
     setLocked(false);
     setExplanation(null);
     startRef.current = Date.now();
   };
 
+  const difficultyLabel =
+    q.difficulty < 0.35 ? "Easy" : q.difficulty < 0.6 ? "Medium" : q.difficulty < 0.8 ? "Hard" : "Expert";
+  const difficultyClass =
+    q.difficulty < 0.35
+      ? "bg-emerald-100 text-emerald-800"
+      : q.difficulty < 0.6
+        ? "bg-amber-100 text-amber-800"
+        : q.difficulty < 0.8
+          ? "bg-orange-100 text-orange-800"
+          : "bg-rose-100 text-rose-800";
+
   return (
     <div className="rounded-2xl border border-border bg-card p-6">
-      <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
-        Practice question
-      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
+          Practice · {qIdx + 1}/{bank.length}
+        </span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${difficultyClass}`}
+        >
+          {difficultyLabel} · {q.difficulty.toFixed(2)}
+        </span>
+        {q.tags.map((t) => (
+          <span
+            key={t}
+            className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground"
+          >
+            #{t}
+          </span>
+        ))}
+        {q.prerequisite_concept_ids.length > 0 && (
+          <span className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+            needs prerequisite
+          </span>
+        )}
+      </div>
       <h3 className="mt-2 font-serif text-2xl font-semibold leading-snug">{q.question}</h3>
       <div className="mt-6 space-y-3">
         {q.options.map((opt, i) => {
@@ -324,13 +409,24 @@ function PracticePanel({
               {isCorrect
                 ? "Nice — this concept just got more stable."
                 : "Marked as struggling. We'll bring it back sooner."}
+              <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">
+                Session {correctCount}/{answered}
+              </span>
             </p>
-            <button
-              onClick={reset}
-              className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-            >
-              Try again
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={retry}
+                className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Try again
+              </button>
+              <button
+                onClick={nextQuestion}
+                className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              >
+                Next question →
+              </button>
+            </div>
           </div>
         </div>
       )}
