@@ -3,6 +3,15 @@ import { X, ArrowRight, ArrowLeft, Brain, Sparkles } from "lucide-react";
 
 const STORAGE_KEY = "memorytwin.onboarded.v1";
 
+// How long each "cycle" beat lasts inside a multi-target step (ms).
+const CYCLE_MS = 1500;
+
+function emitTourStep(step: number, cycle: number) {
+  window.dispatchEvent(
+    new CustomEvent("memorytwin:tour-step", { detail: { step, cycle } }),
+  );
+}
+
 type Step = {
   eyebrow: string;
   title: string;
@@ -96,9 +105,25 @@ export function Onboarding() {
     return () => window.removeEventListener("memorytwin:open-onboarding", onOpen);
   }, []);
 
+  // Drive the dashboard's tour-highlight state as the user moves through steps.
+  useEffect(() => {
+    if (!open) {
+      emitTourStep(-1, 0);
+      return;
+    }
+    let cycle = 0;
+    emitTourStep(step, cycle);
+    const id = window.setInterval(() => {
+      cycle += 1;
+      emitTourStep(step, cycle);
+    }, CYCLE_MS);
+    return () => window.clearInterval(id);
+  }, [open, step]);
+
   const close = () => {
     try { localStorage.setItem(STORAGE_KEY, "1"); } catch { /* ignore */ }
     setOpen(false);
+    emitTourStep(-1, 0);
   };
 
   if (!open) return null;
@@ -106,8 +131,9 @@ export function Onboarding() {
   const isLast = step === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/40 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg border border-border bg-card shadow-xl">
+    // Pinned bottom-right so the brain + lane highlights stay visible during the tour.
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-end p-4 sm:p-6">
+      <div className="pointer-events-auto relative w-full max-w-sm border border-border bg-card shadow-2xl animate-fade-in">
         <button
           onClick={close}
           aria-label="Close walkthrough"
