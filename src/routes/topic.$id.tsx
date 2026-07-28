@@ -794,3 +794,67 @@ function ApplyPanel({
     </div>
   );
 }
+
+function MasteredPanel({
+  ws,
+  topicId,
+  onReview,
+}: {
+  ws: TopicWorkspace;
+  topicId: string;
+  onReview: () => void;
+}) {
+  const last = ws.state.last_reviewed_at ? new Date(ws.state.last_reviewed_at) : null;
+  const days = last ? Math.max(0, (Date.now() - last.getTime()) / 86_400_000) : 0;
+  const R = last ? Math.exp(-days / Math.max(0.1, ws.state.memory_stability)) : 1;
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+        <div className="flex items-center gap-2 text-emerald-600">
+          <Trophy className="h-6 w-6" />
+          <span className="font-serif text-2xl font-semibold">Topic mastered</span>
+        </div>
+        <p className="mt-2 text-sm text-foreground">
+          This concept is in your long-term memory model. Current predicted recall: {" "}
+          <span className="font-semibold">{Math.round(R * 100)}%</span> with a stability of{" "}
+          {ws.state.memory_stability.toFixed(1)} days.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={onReview}
+            className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+          >
+            Quick review →
+          </button>
+          <Link
+            to="/course"
+            className="rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-muted"
+          >
+            Browse course
+          </Link>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <h4 className="font-serif text-lg font-semibold">Memory metrics</h4>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Mastery</p>
+            <p className="mt-1 font-serif text-2xl font-semibold">{Math.round(ws.state.mastery * 100)}%</p>
+          </div>
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Stability</p>
+            <p className="mt-1 font-serif text-2xl font-semibold">{ws.state.memory_stability.toFixed(1)}d</p>
+          </div>
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Last review</p>
+            <p className="mt-1 text-sm">
+              {last ? last.toLocaleDateString() : "Not reviewed yet"}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
