@@ -15,6 +15,7 @@ import {
   Dumbbell,
   Feather,
   Trophy,
+  Award,
   Save,
 } from "lucide-react";
 import {
