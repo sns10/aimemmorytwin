@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ReviewRouteImport } from './routes/review'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -18,6 +19,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TopicIdRouteImport } from './routes/topic.$id'
 import { Route as ConceptIdRouteImport } from './routes/concept.$id'
 
+const ReviewRoute = ReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuizRoute = QuizRouteImport.update({
   id: '/quiz',
   path: '/quiz',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
+  '/review': typeof ReviewRoute
   '/concept/$id': typeof ConceptIdRoute
   '/topic/$id': typeof TopicIdRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
+  '/review': typeof ReviewRoute
   '/concept/$id': typeof ConceptIdRoute
   '/topic/$id': typeof TopicIdRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
+  '/review': typeof ReviewRoute
   '/concept/$id': typeof ConceptIdRoute
   '/topic/$id': typeof TopicIdRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/profile'
     | '/quiz'
+    | '/review'
     | '/concept/$id'
     | '/topic/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/profile'
     | '/quiz'
+    | '/review'
     | '/concept/$id'
     | '/topic/$id'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/profile'
     | '/quiz'
+    | '/review'
     | '/concept/$id'
     | '/topic/$id'
   fileRoutesById: FileRoutesById
@@ -130,12 +142,20 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   ProfileRoute: typeof ProfileRoute
   QuizRoute: typeof QuizRoute
+  ReviewRoute: typeof ReviewRoute
   ConceptIdRoute: typeof ConceptIdRoute
   TopicIdRoute: typeof TopicIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/review': {
+      id: '/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof ReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quiz': {
       id: '/quiz'
       path: '/quiz'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   ProfileRoute: ProfileRoute,
   QuizRoute: QuizRoute,
+  ReviewRoute: ReviewRoute,
   ConceptIdRoute: ConceptIdRoute,
   TopicIdRoute: TopicIdRoute,
 }

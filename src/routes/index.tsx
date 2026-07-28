@@ -2,13 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle, Zap } from "lucide-react";
+import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle, Zap, Flame } from "lucide-react";
 import {
   getStudentOverview,
   generateDailyBriefing,
 } from "@/lib/memorytwin.functions";
 import { getCourseTree } from "@/lib/course.functions";
 import { getPersonalityContext, logRecommendationEvent } from "@/lib/personality.functions";
+import { getReviewQueue } from "@/lib/review.functions";
 import { BrainVisualization } from "@/components/BrainVisualization";
 import { RetentionChart } from "@/components/RetentionChart";
 import { StudyPlan } from "@/components/StudyPlan";
@@ -34,11 +35,18 @@ const personalityQuery = queryOptions({
   staleTime: 0,
 });
 
+const reviewSummaryQuery = queryOptions({
+  queryKey: ["review-queue"],
+  queryFn: () => getReviewQueue(),
+  staleTime: 0,
+});
+
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(overviewQuery);
     context.queryClient.ensureQueryData(courseQuery);
     context.queryClient.ensureQueryData(personalityQuery);
+    context.queryClient.ensureQueryData(reviewSummaryQuery);
   },
   component: Dashboard,
   errorComponent: ErrBoundary,
@@ -57,6 +65,7 @@ function Dashboard() {
   const { data } = useSuspenseQuery(overviewQuery);
   const { data: subjects } = useSuspenseQuery(courseQuery);
   const { data: personality } = useQuery(personalityQuery);
+  const { data: review } = useQuery(reviewSummaryQuery);
   const briefingFn = useServerFn(generateDailyBriefing);
   const briefingQ = useQuery({
     queryKey: ["briefing"],
@@ -196,6 +205,14 @@ function Dashboard() {
             <Link to="/course" className="inline-flex items-center gap-1.5 hover:text-primary">
               <BookOpen className="h-3.5 w-3.5" /> Course
             </Link>
+            <Link to="/review" className="inline-flex items-center gap-1.5 hover:text-primary">
+              <Flame className="h-3.5 w-3.5" /> Review
+              {review && review.due.length > 0 && (
+                <span className="rounded-full bg-primary px-1.5 py-px font-mono text-[10px] text-primary-foreground">
+                  {review.due.length}
+                </span>
+              )}
+            </Link>
             <Link to="/history" className="inline-flex items-center gap-1.5 hover:text-primary">
               <History className="h-3.5 w-3.5" /> Activity
             </Link>
@@ -251,6 +268,34 @@ function Dashboard() {
             </div>
 
             {/* Primary CTA */}
+            {review && (
+              <Link
+                to="/review"
+                className="flex items-center justify-between border border-border bg-card px-4 py-3 transition hover:border-foreground/40"
+              >
+                <div className="flex items-center gap-3">
+                  <Flame
+                    className={
+                      "h-5 w-5 " +
+                      (review.streak.current_streak > 0 ? "text-primary" : "text-muted-foreground")
+                    }
+                  />
+                  <div>
+                    <div className="text-sm font-semibold">
+                      {review.due.length > 0
+                        ? `${review.due.length} card${review.due.length === 1 ? "" : "s"} due for review`
+                        : "Review queue clear"}
+                    </div>
+                    <div className="ink-caps mt-0.5 text-muted-foreground">
+                      {review.streak.current_streak}-day streak ·{" "}
+                      {review.streak.reviews_today} answered today
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            )}
+
             {nextTopic && nextAction && (
               <Link
                 to={nextAction.href as "/topic/$id"}
