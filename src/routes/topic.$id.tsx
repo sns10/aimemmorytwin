@@ -30,6 +30,7 @@ import {
 } from "@/lib/memorytwin.functions";
 import { StageBadge } from "@/components/StageBadge";
 import { stageBlurb } from "@/lib/stage";
+import { difficultyFitLabel, pickQuestionIndex } from "@/lib/adaptive";
 import type { QuestionRow } from "@/lib/course.functions";
 
 const workspaceQuery = (id: string) =>
@@ -404,6 +405,7 @@ function PracticePanel({
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explaining, setExplaining] = useState(false);
   const [qIdx, setQIdx] = useState(0);
+  const [served, setServed] = useState<number[]>([]);
   const [answered, setAnswered] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [sessionMastery, setSessionMastery] = useState<number | null>(null);
@@ -415,8 +417,14 @@ function PracticePanel({
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
-        const s = JSON.parse(raw) as { qIdx?: number; answered?: number; correctCount?: number };
+        const s = JSON.parse(raw) as {
+          qIdx?: number;
+          served?: number[];
+          answered?: number;
+          correctCount?: number;
+        };
         if (typeof s.qIdx === "number") setQIdx(s.qIdx);
+        if (Array.isArray(s.served)) setServed(s.served.filter((n) => typeof n === "number"));
         if (typeof s.answered === "number") setAnswered(s.answered);
         if (typeof s.correctCount === "number") setCorrectCount(s.correctCount);
       }
@@ -427,10 +435,10 @@ function PracticePanel({
     try {
       localStorage.setItem(
         storageKey,
-        JSON.stringify({ qIdx, answered, correctCount }),
+        JSON.stringify({ qIdx, served, answered, correctCount }),
       );
     } catch {}
-  }, [storageKey, qIdx, answered, correctCount]);
+  }, [storageKey, qIdx, served, answered, correctCount]);
 
   // Prefer the questions bank; fall back to the single concept-level question.
   const bank: QuestionRow[] =
@@ -452,6 +460,16 @@ function PracticePanel({
   const q = bank[qIdx % bank.length];
   const isCorrect = selected === q.correct_index;
   const isFromBank = ws.questions.length > 0;
+  const liveMastery = sessionMastery ?? ws.state.mastery;
+  const fitLabel = difficultyFitLabel(q.difficulty, liveMastery);
+
+  // First item of a fresh session: start at the learner's current level.
+  useEffect(() => {
+    if (served.length === 0 && answered === 0) {
+      setQIdx(pickQuestionIndex(bank, ws.state.mastery, []));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicId, bank.length]);
 
   const readyForApply = (sessionMastery ?? ws.state.mastery) >= 0.65;
 
@@ -492,7 +510,12 @@ function PracticePanel({
     setLocked(false);
     setExplanation(null);
     startRef.current = Date.now();
-    setQIdx((i) => (i + 1) % bank.length);
+    setServed((prev) => {
+      const seen = prev.includes(qIdx) ? prev : [...prev, qIdx];
+      const next = pickQuestionIndex(bank, liveMastery, seen);
+      setQIdx(next);
+      return seen.length >= bank.length ? [next] : seen;
+    });
   };
 
   const retry = () => {
@@ -546,12 +569,15 @@ function PracticePanel({
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
-            Practice · {qIdx + 1}/{bank.length}
+            Practice · {Math.min(served.length + 1, bank.length)}/{bank.length}
           </span>
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${difficultyClass}`}
           >
             {difficultyLabel} · {q.difficulty.toFixed(2)}
+          </span>
+          <span className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+            Adaptive · {fitLabel}
           </span>
           {q.tags.map((t) => (
             <span

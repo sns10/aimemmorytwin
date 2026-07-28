@@ -530,6 +530,7 @@ export type Database = {
           daily_briefing: string | null
           id: string
           name: string
+          user_id: string | null
         }
         Insert: {
           briefing_generated_at?: string | null
@@ -537,6 +538,7 @@ export type Database = {
           daily_briefing?: string | null
           id?: string
           name: string
+          user_id?: string | null
         }
         Update: {
           briefing_generated_at?: string | null
@@ -544,6 +546,7 @@ export type Database = {
           daily_briefing?: string | null
           id?: string
           name?: string
+          user_id?: string | null
         }
         Relationships: []
       }

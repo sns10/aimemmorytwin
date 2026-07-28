@@ -1,30 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
-import { DEMO_STUDENT_ID } from "./memorytwin.functions";
 import { computeStage, type Stage } from "./stage";
 
-function makeClient() {
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
-  return createClient<Database>(url, key, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (
-          (key.startsWith("sb_publishable_") || key.startsWith("sb_secret_")) &&
-          h.get("Authorization") === `Bearer ${key}`
-        ) {
-          h.delete("Authorization");
-        }
-        h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
-      },
-    },
-  });
-}
 
 export type TopicNode = {
   id: string;
@@ -58,7 +35,8 @@ export type SubjectTree = {
 
 export const getCourseTree = createServerFn({ method: "GET" }).handler(
   async (): Promise<SubjectTree[]> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const [subjectsRes, chaptersRes, topicsRes, statesRes, viewsRes, subsRes] =
       await Promise.all([
         supabase.from("subjects").select("id, name, description, sort_order").order("sort_order"),
@@ -70,16 +48,16 @@ export const getCourseTree = createServerFn({ method: "GET" }).handler(
         supabase
           .from("knowledge_states")
           .select("concept_id, mastery_probability, memory_stability, last_reviewed_at, next_revision_at")
-          .eq("student_id", DEMO_STUDENT_ID),
+          .eq("student_id", studentId),
         supabase
           .from("learning_events")
           .select("concept_id")
-          .eq("student_id", DEMO_STUDENT_ID)
+          .eq("student_id", studentId)
           .eq("event_kind", "lesson_view"),
         supabase
           .from("assignment_submissions")
           .select("concept_id, ai_score")
-          .eq("student_id", DEMO_STUDENT_ID),
+          .eq("student_id", studentId),
       ]);
     if (subjectsRes.error) throw subjectsRes.error;
     if (chaptersRes.error) throw chaptersRes.error;
@@ -228,7 +206,8 @@ export type TopicWorkspace = {
 export const getTopicWorkspace = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => TopicWsInput.parse(input))
   .handler(async ({ data }): Promise<TopicWorkspace> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const [tRes, lRes, aRes, sRes, subsRes, viewRes, stRes, qRes] = await Promise.all([
       supabase
         .from("concepts")
@@ -252,19 +231,19 @@ export const getTopicWorkspace = createServerFn({ method: "GET" })
       supabase
         .from("knowledge_states")
         .select("mastery_probability, memory_stability, last_reviewed_at, next_revision_at")
-        .eq("student_id", DEMO_STUDENT_ID)
+        .eq("student_id", studentId)
         .eq("concept_id", data.topic_id)
         .maybeSingle(),
       supabase
         .from("assignment_submissions")
         .select("id, response, ai_score, ai_feedback, created_at")
-        .eq("student_id", DEMO_STUDENT_ID)
+        .eq("student_id", studentId)
         .eq("concept_id", data.topic_id)
         .order("created_at", { ascending: false }),
       supabase
         .from("learning_events")
         .select("id")
-        .eq("student_id", DEMO_STUDENT_ID)
+        .eq("student_id", studentId)
         .eq("concept_id", data.topic_id)
         .eq("event_kind", "lesson_view")
         .limit(1),
@@ -394,12 +373,13 @@ const MarkViewedInput = z.object({ topic_id: z.string().uuid() });
 export const markLessonViewed = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => MarkViewedInput.parse(input))
   .handler(async ({ data }) => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     // Only record one lesson_view per topic to avoid noise.
     const { data: existing } = await supabase
       .from("learning_events")
       .select("id")
-      .eq("student_id", DEMO_STUDENT_ID)
+      .eq("student_id", studentId)
       .eq("concept_id", data.topic_id)
       .eq("event_kind", "lesson_view")
       .limit(1);
@@ -410,7 +390,7 @@ export const markLessonViewed = createServerFn({ method: "POST" })
         .eq("id", data.topic_id)
         .maybeSingle();
       await supabase.from("learning_events").insert({
-        student_id: DEMO_STUDENT_ID,
+        student_id: studentId,
         concept_id: data.topic_id,
         is_correct: true,
         response_time_ms: 0,
@@ -429,7 +409,8 @@ const SubmitAssignmentInput = z.object({
 export const submitAssignment = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SubmitAssignmentInput.parse(input))
   .handler(async ({ data }): Promise<{ score: number; feedback: string }> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const { data: a, error } = await supabase
       .from("assignments")
       .select("id, concept_id, title, prompt, rubric, difficulty, concepts(name, subject)")
@@ -502,7 +483,7 @@ ${data.response}
     const { data: prior } = await supabase
       .from("knowledge_states")
       .select("mastery_probability, memory_stability")
-      .eq("student_id", DEMO_STUDENT_ID)
+      .eq("student_id", studentId)
       .eq("concept_id", a.concept_id)
       .maybeSingle();
     const priorM = Number(prior?.mastery_probability ?? 0.15);
@@ -513,7 +494,7 @@ ${data.response}
 
     await Promise.all([
       supabase.from("assignment_submissions").insert({
-        student_id: DEMO_STUDENT_ID,
+        student_id: studentId,
         assignment_id: a.id,
         concept_id: a.concept_id,
         response: data.response,
@@ -521,7 +502,7 @@ ${data.response}
         ai_feedback: feedback,
       }),
       supabase.from("learning_events").insert({
-        student_id: DEMO_STUDENT_ID,
+        student_id: studentId,
         concept_id: a.concept_id,
         is_correct: isCorrect,
         response_time_ms: 0,
@@ -530,7 +511,7 @@ ${data.response}
       }),
       supabase.from("knowledge_states").upsert(
         {
-          student_id: DEMO_STUDENT_ID,
+          student_id: studentId,
           concept_id: a.concept_id,
           mastery_probability: newMastery,
           memory_stability: newStability,
@@ -543,7 +524,7 @@ ${data.response}
       supabase
         .from("students")
         .update({ briefing_generated_at: null })
-        .eq("id", DEMO_STUDENT_ID),
+        .eq("id", studentId),
     ]);
 
     return { score, feedback };
@@ -560,11 +541,12 @@ export type HistoryRow = {
 
 export const getHistory = createServerFn({ method: "GET" }).handler(
   async (): Promise<HistoryRow[]> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const { data, error } = await supabase
       .from("learning_events")
       .select("id, created_at, event_kind, is_correct, concept_id, concepts(name)")
-      .eq("student_id", DEMO_STUDENT_ID)
+      .eq("student_id", studentId)
       .order("created_at", { ascending: false })
       .limit(100);
     if (error) throw error;

@@ -1,30 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
-import { DEMO_STUDENT_ID } from "./memorytwin.functions";
 import { assignCluster, type Cluster } from "./personality";
 
-function makeClient() {
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
-  return createClient<Database>(url, key, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (
-          (key.startsWith("sb_publishable_") || key.startsWith("sb_secret_")) &&
-          h.get("Authorization") === `Bearer ${key}`
-        ) {
-          h.delete("Authorization");
-        }
-        h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
-      },
-    },
-  });
-}
 
 export type CohortStat = {
   concept_id: string;
@@ -51,7 +28,8 @@ export type PersonalityContext = {
 /** Everything the explanation layer needs, in one round trip. */
 export const getPersonalityContext = createServerFn({ method: "GET" }).handler(
   async (): Promise<PersonalityContext> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -61,7 +39,7 @@ export const getPersonalityContext = createServerFn({ method: "GET" }).handler(
         .select(
           "cluster, tailored_enabled, openness, conscientiousness, extraversion, agreeableness, neuroticism, math_confidence",
         )
-        .eq("student_id", DEMO_STUDENT_ID)
+        .eq("student_id", studentId)
         .maybeSingle(),
       supabase
         .from("cohort_topic_stats")
@@ -69,7 +47,7 @@ export const getPersonalityContext = createServerFn({ method: "GET" }).handler(
       supabase
         .from("learning_events")
         .select("id")
-        .eq("student_id", DEMO_STUDENT_ID)
+        .eq("student_id", studentId)
         .gte("created_at", startOfDay.toISOString()),
     ]);
     if (profileRes.error) throw profileRes.error;
@@ -114,10 +92,11 @@ export const savePersonalityProfile = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SaveProfileInput.parse(input))
   .handler(async ({ data }) => {
     const { cluster, distances } = assignCluster(data);
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const { error } = await supabase.from("personality_profiles").upsert(
       {
-        student_id: DEMO_STUDENT_ID,
+        student_id: studentId,
         ...data,
         cluster,
         tailored_enabled: true,
@@ -132,11 +111,12 @@ export const savePersonalityProfile = createServerFn({ method: "POST" })
 export const setTailoredEnabled = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ enabled: z.boolean() }).parse(input))
   .handler(async ({ data }) => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const { error } = await supabase
       .from("personality_profiles")
       .update({ tailored_enabled: data.enabled })
-      .eq("student_id", DEMO_STUDENT_ID);
+      .eq("student_id", studentId);
     if (error) throw error;
     return { ok: true };
   });
@@ -154,9 +134,10 @@ const LogRecInput = z.object({
 export const logRecommendationEvent = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => LogRecInput.parse(input))
   .handler(async ({ data }) => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const { error } = await supabase.from("recommendation_events").insert({
-      student_id: DEMO_STUDENT_ID,
+      student_id: studentId,
       concept_id: data.concept_id,
       kind: data.kind,
       lane: data.lane,
@@ -177,11 +158,12 @@ export type EngagementStats = {
 
 export const getEngagementStats = createServerFn({ method: "GET" }).handler(
   async (): Promise<EngagementStats> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const { data, error } = await supabase
       .from("recommendation_events")
       .select("kind, explanation_mode")
-      .eq("student_id", DEMO_STUDENT_ID)
+      .eq("student_id", studentId)
       .limit(5000);
     if (error) throw error;
 

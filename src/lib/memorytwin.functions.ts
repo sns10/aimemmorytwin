@@ -1,30 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
 
-export const DEMO_STUDENT_ID = "11111111-1111-1111-1111-111111111111";
 
-function makeClient() {
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
-  return createClient<Database>(url, key, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (
-          (key.startsWith("sb_publishable_") || key.startsWith("sb_secret_")) &&
-          h.get("Authorization") === `Bearer ${key}`
-        ) {
-          h.delete("Authorization");
-        }
-        h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
-      },
-    },
-  });
-}
 
 export type ConceptRow = {
   id: string;
@@ -53,12 +30,13 @@ export const getStudentOverview = createServerFn({ method: "GET" }).handler(
     concepts: ConceptWithState[];
     dueCount: number;
   }> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const [studentRes, conceptsRes, statesRes] = await Promise.all([
       supabase
         .from("students")
         .select("id, name, daily_briefing")
-        .eq("id", DEMO_STUDENT_ID)
+        .eq("id", studentId)
         .maybeSingle(),
       supabase
         .from("concepts")
@@ -67,7 +45,7 @@ export const getStudentOverview = createServerFn({ method: "GET" }).handler(
       supabase
         .from("knowledge_states")
         .select("concept_id, mastery_probability, memory_stability, last_reviewed_at, next_revision_at")
-        .eq("student_id", DEMO_STUDENT_ID),
+        .eq("student_id", studentId),
     ]);
     if (studentRes.error) throw studentRes.error;
     if (conceptsRes.error) throw conceptsRes.error;
@@ -109,7 +87,7 @@ export const getStudentOverview = createServerFn({ method: "GET" }).handler(
     ).length;
 
     return {
-      student: studentRes.data ?? { id: DEMO_STUDENT_ID, name: "Alex", daily_briefing: null },
+      student: studentRes.data ?? { id: studentId, name: "Alex", daily_briefing: null },
       concepts,
       dueCount,
     };
@@ -118,13 +96,14 @@ export const getStudentOverview = createServerFn({ method: "GET" }).handler(
 
 export const getRecommendations = createServerFn({ method: "GET" }).handler(
   async (): Promise<ConceptWithState[]> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const { data: states, error } = await supabase
       .from("knowledge_states")
       .select(
         "concept_id, mastery_probability, memory_stability, last_reviewed_at, next_revision_at",
       )
-      .eq("student_id", DEMO_STUDENT_ID);
+      .eq("student_id", studentId);
     if (error) throw error;
     const { data: concepts, error: cErr } = await supabase
       .from("concepts")
@@ -183,7 +162,8 @@ export const submitEvent = createServerFn({ method: "POST" })
     const { updateMasteryBKT, updateStabilityFSRS, nextRevisionDate } = await import(
       "./bkt.server"
     );
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
 
     const [conceptRes, stateRes, questionRes] = await Promise.all([
       supabase
@@ -196,7 +176,7 @@ export const submitEvent = createServerFn({ method: "POST" })
       supabase
         .from("knowledge_states")
         .select("mastery_probability, memory_stability")
-        .eq("student_id", DEMO_STUDENT_ID)
+        .eq("student_id", studentId)
         .eq("concept_id", data.concept_id)
         .maybeSingle(),
       data.question_id
@@ -221,7 +201,7 @@ export const submitEvent = createServerFn({ method: "POST" })
       const { data: pre } = await supabase
         .from("knowledge_states")
         .select("mastery_probability")
-        .eq("student_id", DEMO_STUDENT_ID)
+        .eq("student_id", studentId)
         .eq("concept_id", concept.prerequisite_id)
         .maybeSingle();
       prereqMastery = Number(pre?.mastery_probability ?? 0.15);
@@ -251,7 +231,7 @@ export const submitEvent = createServerFn({ method: "POST" })
 
     const [{ error: evErr }, { error: upErr }] = await Promise.all([
       supabase.from("learning_events").insert({
-        student_id: DEMO_STUDENT_ID,
+        student_id: studentId,
         concept_id: data.concept_id,
         is_correct: data.is_correct,
         response_time_ms: data.response_time_ms,
@@ -262,7 +242,7 @@ export const submitEvent = createServerFn({ method: "POST" })
       }),
       supabase.from("knowledge_states").upsert(
         {
-          student_id: DEMO_STUDENT_ID,
+          student_id: studentId,
           concept_id: data.concept_id,
           mastery_probability: newMastery,
           memory_stability: newStability,
@@ -280,7 +260,7 @@ export const submitEvent = createServerFn({ method: "POST" })
     await supabase
       .from("students")
       .update({ briefing_generated_at: null })
-      .eq("id", DEMO_STUDENT_ID);
+      .eq("id", studentId);
 
     return {
       mastery_probability: newMastery,
@@ -298,7 +278,8 @@ const ExplainInput = z.object({
 export const explainMisconception = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ExplainInput.parse(input))
   .handler(async ({ data }): Promise<{ explanation: string }> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const [{ data: concept, error }, qRes] = await Promise.all([
       supabase
         .from("concepts")
@@ -393,7 +374,8 @@ export const getConceptDetail = createServerFn({ method: "GET" })
       state: KnowledgeRow;
       events: LearningEventRow[];
     }> => {
-      const supabase = makeClient();
+      const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
       const [cRes, sRes, eRes] = await Promise.all([
         supabase
           .from("concepts")
@@ -403,13 +385,13 @@ export const getConceptDetail = createServerFn({ method: "GET" })
         supabase
           .from("knowledge_states")
           .select("concept_id, mastery_probability, memory_stability, last_reviewed_at, next_revision_at")
-          .eq("student_id", DEMO_STUDENT_ID)
+          .eq("student_id", studentId)
           .eq("concept_id", data.concept_id)
           .maybeSingle(),
         supabase
           .from("learning_events")
           .select("id, is_correct, response_time_ms, created_at")
-          .eq("student_id", DEMO_STUDENT_ID)
+          .eq("student_id", studentId)
           .eq("concept_id", data.concept_id)
           .order("created_at", { ascending: false })
           .limit(50),
@@ -456,11 +438,12 @@ export const getConceptDetail = createServerFn({ method: "GET" })
 
 export const generateDailyBriefing = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ briefing: string; cached: boolean }> => {
-    const supabase = makeClient();
+    const { resolveStudent } = await import("./session.server");
+    const { supabase, studentId } = await resolveStudent();
     const { data: student } = await supabase
       .from("students")
       .select("id, name, daily_briefing, briefing_generated_at")
-      .eq("id", DEMO_STUDENT_ID)
+      .eq("id", studentId)
       .maybeSingle();
 
     const generatedAt = student?.briefing_generated_at
@@ -479,7 +462,7 @@ export const generateDailyBriefing = createServerFn({ method: "POST" }).handler(
       .select(
         "mastery_probability, memory_stability, last_reviewed_at, next_revision_at, concepts(name)",
       )
-      .eq("student_id", DEMO_STUDENT_ID);
+      .eq("student_id", studentId);
 
     const now = Date.now();
     const mastered: string[] = [];
@@ -587,7 +570,7 @@ Mastered (skip): ${mastered.length ? mastered.join(", ") : "none yet"}`,
         daily_briefing: briefing,
         briefing_generated_at: new Date().toISOString(),
       })
-      .eq("id", DEMO_STUDENT_ID);
+      .eq("id", studentId);
 
     return { briefing, cached: false };
   },
