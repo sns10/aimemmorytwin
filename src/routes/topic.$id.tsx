@@ -845,7 +845,7 @@ function MasteredPanel({
           </div>
           <div className="rounded-xl border border-border bg-background p-4">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Stability</p>
-            <p className="mt-1 font-serif text-2xl font-semibold">{ws.state.memory_stability.toFixed(1)}d</p>
+            <p className="mt-1 font-serif text-2xl font-semibold">{ws.state.stability.toFixed(1)}d</p>
           </div>
           <div className="rounded-xl border border-border bg-background p-4">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Last review</p>
