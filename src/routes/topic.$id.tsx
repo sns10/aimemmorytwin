@@ -389,9 +389,11 @@ function LearnPanel({
 function PracticePanel({
   ws,
   topicId,
+  onDone,
 }: {
   ws: TopicWorkspace;
   topicId: string;
+  onDone: () => void;
 }) {
   const qc = useQueryClient();
   const submit = useServerFn(submitEvent);
@@ -403,6 +405,7 @@ function PracticePanel({
   const [qIdx, setQIdx] = useState(0);
   const [answered, setAnswered] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
+  const [sessionMastery, setSessionMastery] = useState<number | null>(null);
   const startRef = useRef<number>(Date.now());
 
   const storageKey = `mt:practice:${topicId}`;
@@ -449,6 +452,8 @@ function PracticePanel({
   const isCorrect = selected === q.correct_index;
   const isFromBank = ws.questions.length > 0;
 
+  const readyForApply = (sessionMastery ?? ws.state.mastery) >= 0.65;
+
   const onSelect = (choice: number) => {
     if (locked) return;
     setSelected(choice);
@@ -465,7 +470,8 @@ function PracticePanel({
         ...(isFromBank ? { question_id: q.id } : {}),
       },
     })
-      .then(() => {
+      .then((r) => {
+        setSessionMastery(r.mastery_probability);
         qc.invalidateQueries({ queryKey: ["topic-ws", topicId] });
         qc.invalidateQueries({ queryKey: ["course-tree"] });
         qc.invalidateQueries({ queryKey: ["overview"] });
@@ -507,102 +513,132 @@ function PracticePanel({
           : "bg-rose-100 text-rose-800";
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
-          Practice · {qIdx + 1}/{bank.length}
-        </span>
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${difficultyClass}`}
-        >
-          {difficultyLabel} · {q.difficulty.toFixed(2)}
-        </span>
-        {q.tags.map((t) => (
-          <span
-            key={t}
-            className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground"
-          >
-            #{t}
-          </span>
-        ))}
-        {q.prerequisite_concept_ids.length > 0 && (
-          <span className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
-            needs prerequisite
-          </span>
-        )}
-      </div>
-      <h3 className="mt-2 font-serif text-2xl font-semibold leading-snug">{q.question}</h3>
-      <div className="mt-6 space-y-3">
-        {q.options.map((opt, i) => {
-          const isSel = selected === i;
-          const isRight = i === q.correct_index;
-          const showState = locked && (isSel || isRight);
-          return (
+    <div className="space-y-4">
+      {readyForApply && (
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+          <div className="flex items-center gap-2 text-emerald-600">
+            <Trophy className="h-5 w-5" />
+            <span className="font-serif text-lg font-semibold">Practice goal reached</span>
+          </div>
+          <p className="mt-2 text-sm text-foreground">
+            Mastery is now {Math.round((sessionMastery ?? ws.state.mastery) * 100)}%. Ready to prove you can apply this in the assignment?
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
             <button
-              key={i}
-              onClick={() => onSelect(i)}
-              disabled={locked}
-              className={
-                "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition " +
-                (showState
-                  ? isRight
-                    ? "border-primary bg-primary/10"
-                    : "border-destructive/40 bg-destructive/10"
-                  : "border-border bg-background hover:border-primary/60 hover:bg-accent/30")
-              }
+              onClick={onDone}
+              className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
             >
-              <span>{opt}</span>
-              {showState &&
-                (isRight ? (
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                ) : isSel ? (
-                  <XCircle className="h-4 w-4 text-destructive" />
-                ) : null)}
+              Move to Apply →
             </button>
-          );
-        })}
-      </div>
-      {locked && (
-        <div className="mt-6 space-y-4">
-          {!isCorrect && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
-              <div className="flex items-center gap-2 text-primary">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium uppercase tracking-wide">
-                  Why you missed it
-                </span>
-              </div>
-              <p className="mt-2 text-sm leading-relaxed">
-                {explaining ? "Thinking through your answer…" : (explanation ?? "…")}
-              </p>
-            </div>
-          )}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {isCorrect
-                ? "Nice — this concept just got more stable."
-                : "Marked as struggling. We'll bring it back sooner."}
-              <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">
-                Session {correctCount}/{answered}
-              </span>
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={retry}
-                className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
-              >
-                Try again
-              </button>
-              <button
-                onClick={nextQuestion}
-                className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-              >
-                Next question →
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                try { localStorage.removeItem(storageKey); } catch {}
+              }}
+              className="rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-muted"
+            >
+              Stop and save progress
+            </button>
           </div>
         </div>
       )}
+
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
+            Practice · {qIdx + 1}/{bank.length}
+          </span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${difficultyClass}`}
+          >
+            {difficultyLabel} · {q.difficulty.toFixed(2)}
+          </span>
+          {q.tags.map((t) => (
+            <span
+              key={t}
+              className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground"
+            >
+              #{t}
+            </span>
+          ))}
+          {q.prerequisite_concept_ids.length > 0 && (
+            <span className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+              needs prerequisite
+            </span>
+          )}
+        </div>
+        <h3 className="mt-2 font-serif text-2xl font-semibold leading-snug">{q.question}</h3>
+        <div className="mt-6 space-y-3">
+          {q.options.map((opt, i) => {
+            const isSel = selected === i;
+            const isRight = i === q.correct_index;
+            const showState = locked && (isSel || isRight);
+            return (
+              <button
+                key={i}
+                onClick={() => onSelect(i)}
+                disabled={locked}
+                className={
+                  "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition " +
+                  (showState
+                    ? isRight
+                      ? "border-primary bg-primary/10"
+                      : "border-destructive/40 bg-destructive/10"
+                    : "border-border bg-background hover:border-primary/60 hover:bg-accent/30")
+                }
+              >
+                <span>{opt}</span>
+                {showState &&
+                  (isRight ? (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  ) : isSel ? (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  ) : null)}
+              </button>
+            );
+          })}
+        </div>
+        {locked && (
+          <div className="mt-6 space-y-4">
+            {!isCorrect && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="text-[11px] font-medium uppercase tracking-wide">
+                    Why you missed it
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed">
+                  {explaining ? "Thinking through your answer…" : (explanation ?? "…")}
+                </p>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {isCorrect
+                  ? "Nice — this concept just got more stable."
+                  : "Marked as struggling. We'll bring it back sooner."}
+                <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">
+                  Session {correctCount}/{answered}
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={retry}
+                  className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+                >
+                  Try again
+                </button>
+                <button
+                  onClick={nextQuestion}
+                  className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                >
+                  Next question →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
