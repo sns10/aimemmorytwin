@@ -75,8 +75,7 @@ function RecImpression({
         explanation_mode: mode,
         persuasive_type: persuasiveType,
         profile_cluster: cluster,
-      },
-    }).catch(() => {});
+      }).catch(() => {});
   }, [conceptId, lane, mode, persuasiveType, cluster]);
   return null;
 }
@@ -322,8 +321,7 @@ export function StudyPlan({
                               : "characteristic",
                             persuasive_type: firstExplain.persuasive?.type ?? null,
                             profile_cluster: cluster,
-                          },
-                        }).catch(() => {});
+                          }).catch(() => {});
                       }}
                       className="mt-4 flex items-center justify-between rounded-xl border border-primary/40 bg-background px-3 py-3 shadow-sm transition hover:border-primary"
                     >

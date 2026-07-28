@@ -309,8 +309,7 @@ function Dashboard() {
                       explanation_mode: "characteristic",
                       persuasive_type: null,
                       profile_cluster: personality?.profile?.cluster ?? null,
-                    },
-                  }).catch(() => {});
+                    }).catch(() => {});
                 }}
                 className={
                   "group relative flex items-center justify-between overflow-hidden border border-border bg-primary px-5 py-4 text-primary-foreground transition hover:bg-foreground " +
