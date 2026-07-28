@@ -35,11 +35,55 @@ type Lane = {
 };
 
 function retrievability(t: TopicNode, now: number): number {
+  return retrievabilityImpl(t, now);
+}
+
+function retrievabilityImpl(t: TopicNode, now: number): number {
   const last = t.last_reviewed_at ? new Date(t.last_reviewed_at).getTime() : null;
   if (!last) return 0.5; // cold start
   const days = Math.max(0, (now - last) / 86_400_000);
   const s = Math.max(0.1, t.stability);
   return Math.exp(-days / s);
+}
+
+function PersuasiveIcon({ type }: { type: PersuasiveType }) {
+  const cls = "mt-[1px] h-3 w-3 shrink-0";
+  if (type === "authority") return <ShieldCheck className={cls} />;
+  if (type === "peer") return <Users className={cls} />;
+  return <Target className={cls} />;
+}
+
+/** Fires a single impression per rendered top pick (paper's CVR denominator). */
+function RecImpression({
+  conceptId,
+  lane,
+  mode,
+  persuasiveType,
+  cluster,
+}: {
+  conceptId: string;
+  lane: LaneKey;
+  mode: "tailored" | "characteristic";
+  persuasiveType: PersuasiveType | null;
+  cluster: Cluster | null;
+}) {
+  const sent = useRef<string | null>(null);
+  useEffect(() => {
+    const key = `${conceptId}:${mode}`;
+    if (sent.current === key) return;
+    sent.current = key;
+    void logRecommendationEvent({
+      data: {
+        concept_id: conceptId,
+        kind: "impression",
+        lane,
+        explanation_mode: mode,
+        persuasive_type: persuasiveType,
+        profile_cluster: cluster,
+      },
+    }).catch(() => {});
+  }, [conceptId, lane, mode, persuasiveType, cluster]);
+  return null;
 }
 
 const LANES: Lane[] = [
