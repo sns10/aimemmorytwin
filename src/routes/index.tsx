@@ -2,18 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle } from "lucide-react";
+import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle, Zap } from "lucide-react";
 import {
   getStudentOverview,
   generateDailyBriefing,
 } from "@/lib/memorytwin.functions";
 import { getCourseTree } from "@/lib/course.functions";
-import { getPersonalityContext } from "@/lib/personality.functions";
+import { getPersonalityContext, logRecommendationEvent } from "@/lib/personality.functions";
 import { BrainVisualization } from "@/components/BrainVisualization";
 import { RetentionChart } from "@/components/RetentionChart";
 import { StudyPlan } from "@/components/StudyPlan";
 import { Onboarding, openOnboarding } from "@/components/Onboarding";
-import { nextActionFor } from "@/lib/stage";
+import { nextActionFor, stageBlurb } from "@/lib/stage";
 
 const overviewQuery = queryOptions({
   queryKey: ["overview"],
