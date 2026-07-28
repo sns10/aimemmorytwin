@@ -1,7 +1,17 @@
+import { useEffect, useMemo, useRef } from "react";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Dumbbell, Feather, RotateCcw, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { BookOpen, Dumbbell, Feather, RotateCcw, ArrowRight, CheckCircle2, Sparkles, ShieldCheck, Users, Target } from "lucide-react";
 import type { SubjectTree, TopicNode } from "@/lib/course.functions";
 import type { Stage } from "@/lib/stage";
+import {
+  characteristicExplanation,
+  persuasiveExplanation,
+  DAILY_GOAL,
+  type Cluster,
+  type PersuasiveType,
+} from "@/lib/personality";
+import type { PersonalityContext } from "@/lib/personality.functions";
+import { logRecommendationEvent } from "@/lib/personality.functions";
 
 type LaneKey = "learn" | "practice" | "apply" | "review";
 
@@ -98,14 +108,26 @@ const LANES: Lane[] = [
 export function StudyPlan({
   subjects,
   highlightLane,
+  personality,
 }: {
   subjects: SubjectTree[];
   highlightLane?: LaneKey | null;
+  personality?: PersonalityContext | null;
 }) {
   const now = Date.now();
   const allTopics: TopicNode[] = subjects.flatMap((s) =>
     s.chapters.flatMap((c) => c.topics),
   );
+
+  const cluster: Cluster | null =
+    personality?.profile && personality.profile.tailored_enabled
+      ? personality.profile.cluster
+      : null;
+  const cohortById = useMemo(() => {
+    const m = new Map<string, PersonalityContext["cohort"][number]>();
+    for (const c of personality?.cohort ?? []) m.set(c.concept_id, c);
+    return m;
+  }, [personality]);
 
   // Prereq map (any topic whose prerequisite is mastered/reviewed counts as "ready").
   const mastered = new Set(
@@ -128,6 +150,27 @@ export function StudyPlan({
   const totalMastered = allTopics.filter((t) => t.stage === "master").length;
   const total = allTopics.length;
 
+  const buildExplanation = (r: Ranked, lane: LaneKey, prereqReady: boolean) => {
+    const stats = cohortById.get(r.topic.id);
+    const facts = {
+      topicName: r.topic.name,
+      lane,
+      mastery: r.topic.mastery,
+      retrievability: r.retrievability,
+      due: new Date(r.topic.next_revision_at).getTime() <= now,
+      prereqReady,
+      peersCompleted: stats?.peers_completed ?? 0,
+      topAchieversCompleted: stats?.top_achievers_completed ?? 0,
+      cohortSize: stats?.cohort_size ?? 24,
+      recsUsedToday: personality?.recsUsedToday ?? 0,
+      dailyGoal: DAILY_GOAL,
+    };
+    return {
+      characteristic: characteristicExplanation(facts),
+      persuasive: cluster ? persuasiveExplanation(cluster, facts) : null,
+    };
+  };
+
   return (
     <section className="mt-12">
       <div className="flex items-baseline justify-between">
@@ -144,6 +187,23 @@ export function StudyPlan({
         </span>
       </div>
 
+      {personality && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+          {cluster ? (
+            <span className="rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 font-medium text-primary">
+              Tailored explanations on · {cluster} profile
+            </span>
+          ) : (
+            <span className="rounded-full border border-border bg-muted/50 px-2.5 py-1 text-muted-foreground">
+              Showing neutral explanations only
+            </span>
+          )}
+          <Link to="/profile" className="text-muted-foreground underline underline-offset-2 hover:text-foreground">
+            {personality.profile ? "Retake the profile" : "Take the 2-minute profile"}
+          </Link>
+        </div>
+      )}
+
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         {LANES.map((lane) => {
           const ranked: Ranked[] = allTopics
@@ -159,6 +219,12 @@ export function StudyPlan({
             .sort((a, b) => b.score - a.score);
 
           const first = ranked[0];
+          const firstPrereqReady = first
+            ? (readyByTopic.get(first.topic.id) ?? true)
+            : true;
+          const firstExplain = first
+            ? buildExplanation(first, lane.key, firstPrereqReady)
+            : null;
           return (
             <div
               key={lane.key}
@@ -195,25 +261,54 @@ export function StudyPlan({
                 </div>
               ) : (
                 <>
-                  {first && (
+                  {first && firstExplain && (
+                    <>
+                    <RecImpression
+                      conceptId={first.topic.id}
+                      lane={lane.key}
+                      mode={firstExplain.persuasive ? "tailored" : "characteristic"}
+                      persuasiveType={firstExplain.persuasive?.type ?? null}
+                      cluster={cluster}
+                    />
                     <Link
                       to="/topic/$id"
                       params={{ id: first.topic.id }}
+                      onClick={() => {
+                        void logRecommendationEvent({
+                          data: {
+                            concept_id: first.topic.id,
+                            kind: "click",
+                            lane: lane.key,
+                            explanation_mode: firstExplain.persuasive
+                              ? "tailored"
+                              : "characteristic",
+                            persuasive_type: firstExplain.persuasive?.type ?? null,
+                            profile_cluster: cluster,
+                          },
+                        }).catch(() => {});
+                      }}
                       className="mt-4 flex items-center justify-between rounded-xl border border-primary/40 bg-background px-3 py-3 shadow-sm transition hover:border-primary"
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0 pr-3">
                         <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-primary">
                           <Sparkles className="h-3 w-3" /> Top pick
                         </div>
                         <div className="mt-0.5 truncate text-sm font-medium">
                           {first.topic.name}
                         </div>
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">
-                          {first.reason}
-                        </div>
+                        <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                          {firstExplain.characteristic}
+                        </p>
+                        {firstExplain.persuasive && (
+                          <p className="mt-1 flex items-start gap-1.5 text-[11px] font-medium leading-snug text-primary">
+                            <PersuasiveIcon type={firstExplain.persuasive.type} />
+                            <span>{firstExplain.persuasive.text}</span>
+                          </p>
+                        )}
                       </div>
                       <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
                     </Link>
+                    </>
                   )}
                   {ranked.length > 1 && (
                     <ul className="mt-2 space-y-1.5">
