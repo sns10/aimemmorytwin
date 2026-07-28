@@ -8,6 +8,7 @@ import {
   generateDailyBriefing,
 } from "@/lib/memorytwin.functions";
 import { getCourseTree } from "@/lib/course.functions";
+import { getPersonalityContext } from "@/lib/personality.functions";
 import { BrainVisualization } from "@/components/BrainVisualization";
 import { RetentionChart } from "@/components/RetentionChart";
 import { StudyPlan } from "@/components/StudyPlan";
@@ -26,10 +27,17 @@ const courseQuery = queryOptions({
   staleTime: 0,
 });
 
+const personalityQuery = queryOptions({
+  queryKey: ["personality"],
+  queryFn: () => getPersonalityContext(),
+  staleTime: 0,
+});
+
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(overviewQuery);
     context.queryClient.ensureQueryData(courseQuery);
+    context.queryClient.ensureQueryData(personalityQuery);
   },
   component: Dashboard,
   errorComponent: ErrBoundary,
@@ -47,6 +55,7 @@ function ErrBoundary({ error }: { error: Error }) {
 function Dashboard() {
   const { data } = useSuspenseQuery(overviewQuery);
   const { data: subjects } = useSuspenseQuery(courseQuery);
+  const { data: personality } = useQuery(personalityQuery);
   const briefingFn = useServerFn(generateDailyBriefing);
   const briefingQ = useQuery({
     queryKey: ["briefing"],
