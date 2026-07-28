@@ -15,6 +15,7 @@ import {
   Dumbbell,
   Feather,
   Trophy,
+  Award,
   Save,
 } from "lucide-react";
 import {
@@ -136,31 +137,39 @@ function TopicPage() {
         {/* Stage checkpoints — independent lanes */}
         <StageCheckpoints ws={ws} active={tab} onPick={setTab} />
 
-        {/* Tabs */}
-        <div className="mt-8 flex gap-2 rounded-full border border-border bg-card p-1 text-sm">
-          {(["learn", "practice", "apply"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={
-                "flex-1 rounded-full px-3 py-1.5 transition " +
-                (tab === t
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground")
-              }
-            >
-              {t === "learn" ? "Learn" : t === "practice" ? "Practice" : "Apply"}
-            </button>
-          ))}
-        </div>
+        {ws.stage === "master" ? (
+          <MasteredPanel ws={ws} topicId={id} onReview={() => setTab("practice")} />
+        ) : (
+          <>
+            {/* Tabs */}
+            <div className="mt-8 flex gap-2 rounded-full border border-border bg-card p-1 text-sm">
+              {(["learn", "practice", "apply"] as Tab[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={
+                    "flex-1 rounded-full px-3 py-1.5 transition " +
+                    (tab === t
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground")
+                  }
+                >
+                  {t === "learn" ? "Learn" : t === "practice" ? "Practice" : "Apply"}
+                </button>
+              ))}
+            </div>
 
-        <div className="mt-6">
-          {tab === "learn" && (
-            <LearnPanel ws={ws} onOpenLesson={onOpenLesson} onDone={() => setTab("practice")} />
-          )}
-          {tab === "practice" && <PracticePanel ws={ws} topicId={id} />}
-          {tab === "apply" && <ApplyPanel ws={ws} topicId={id} />}
-        </div>
+            <div className="mt-6">
+              {tab === "learn" && (
+                <LearnPanel ws={ws} onOpenLesson={onOpenLesson} onDone={() => setTab("practice")} />
+              )}
+              {tab === "practice" && (
+                <PracticePanel ws={ws} topicId={id} onDone={() => setTab("apply")} />
+              )}
+              {tab === "apply" && <ApplyPanel ws={ws} topicId={id} onDone={() => navigate({ to: "/" })} />}
+            </div>
+          </>
+        )}
 
         <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
           <Save className="h-3.5 w-3.5" />
@@ -309,6 +318,27 @@ function LearnPanel({
   onOpenLesson: () => void;
   onDone: () => void;
 }) {
+  const [done, setDone] = useState(false);
+  if (done || ws.lessons.some((l) => l.viewed)) {
+    return (
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+        <div className="flex items-center gap-2 text-emerald-600">
+          <CheckCircle2 className="h-5 w-5" />
+          <span className="font-serif text-lg font-semibold">Lesson complete</span>
+        </div>
+        <p className="mt-2 text-sm text-foreground">
+          Awareness built. The next step is to drill a few questions so the idea
+          sticks.
+        </p>
+        <button
+          onClick={onDone}
+          className="mt-4 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+        >
+          Start practice →
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       {ws.lessons.map((l) => (
@@ -347,7 +377,7 @@ function LearnPanel({
       <button
         onClick={() => {
           onOpenLesson();
-          onDone();
+          setDone(true);
         }}
         className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
       >
@@ -360,9 +390,11 @@ function LearnPanel({
 function PracticePanel({
   ws,
   topicId,
+  onDone,
 }: {
   ws: TopicWorkspace;
   topicId: string;
+  onDone: () => void;
 }) {
   const qc = useQueryClient();
   const submit = useServerFn(submitEvent);
@@ -374,6 +406,7 @@ function PracticePanel({
   const [qIdx, setQIdx] = useState(0);
   const [answered, setAnswered] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
+  const [sessionMastery, setSessionMastery] = useState<number | null>(null);
   const startRef = useRef<number>(Date.now());
 
   const storageKey = `mt:practice:${topicId}`;
@@ -420,6 +453,8 @@ function PracticePanel({
   const isCorrect = selected === q.correct_index;
   const isFromBank = ws.questions.length > 0;
 
+  const readyForApply = (sessionMastery ?? ws.state.mastery) >= 0.65;
+
   const onSelect = (choice: number) => {
     if (locked) return;
     setSelected(choice);
@@ -436,7 +471,8 @@ function PracticePanel({
         ...(isFromBank ? { question_id: q.id } : {}),
       },
     })
-      .then(() => {
+      .then((r) => {
+        setSessionMastery(r.mastery_probability);
         qc.invalidateQueries({ queryKey: ["topic-ws", topicId] });
         qc.invalidateQueries({ queryKey: ["course-tree"] });
         qc.invalidateQueries({ queryKey: ["overview"] });
@@ -478,102 +514,132 @@ function PracticePanel({
           : "bg-rose-100 text-rose-800";
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
-          Practice · {qIdx + 1}/{bank.length}
-        </span>
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${difficultyClass}`}
-        >
-          {difficultyLabel} · {q.difficulty.toFixed(2)}
-        </span>
-        {q.tags.map((t) => (
-          <span
-            key={t}
-            className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground"
-          >
-            #{t}
-          </span>
-        ))}
-        {q.prerequisite_concept_ids.length > 0 && (
-          <span className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
-            needs prerequisite
-          </span>
-        )}
-      </div>
-      <h3 className="mt-2 font-serif text-2xl font-semibold leading-snug">{q.question}</h3>
-      <div className="mt-6 space-y-3">
-        {q.options.map((opt, i) => {
-          const isSel = selected === i;
-          const isRight = i === q.correct_index;
-          const showState = locked && (isSel || isRight);
-          return (
+    <div className="space-y-4">
+      {readyForApply && (
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+          <div className="flex items-center gap-2 text-emerald-600">
+            <Trophy className="h-5 w-5" />
+            <span className="font-serif text-lg font-semibold">Practice goal reached</span>
+          </div>
+          <p className="mt-2 text-sm text-foreground">
+            Mastery is now {Math.round((sessionMastery ?? ws.state.mastery) * 100)}%. Ready to prove you can apply this in the assignment?
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
             <button
-              key={i}
-              onClick={() => onSelect(i)}
-              disabled={locked}
-              className={
-                "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition " +
-                (showState
-                  ? isRight
-                    ? "border-primary bg-primary/10"
-                    : "border-destructive/40 bg-destructive/10"
-                  : "border-border bg-background hover:border-primary/60 hover:bg-accent/30")
-              }
+              onClick={onDone}
+              className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
             >
-              <span>{opt}</span>
-              {showState &&
-                (isRight ? (
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                ) : isSel ? (
-                  <XCircle className="h-4 w-4 text-destructive" />
-                ) : null)}
+              Move to Apply →
             </button>
-          );
-        })}
-      </div>
-      {locked && (
-        <div className="mt-6 space-y-4">
-          {!isCorrect && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
-              <div className="flex items-center gap-2 text-primary">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium uppercase tracking-wide">
-                  Why you missed it
-                </span>
-              </div>
-              <p className="mt-2 text-sm leading-relaxed">
-                {explaining ? "Thinking through your answer…" : (explanation ?? "…")}
-              </p>
-            </div>
-          )}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {isCorrect
-                ? "Nice — this concept just got more stable."
-                : "Marked as struggling. We'll bring it back sooner."}
-              <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">
-                Session {correctCount}/{answered}
-              </span>
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={retry}
-                className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
-              >
-                Try again
-              </button>
-              <button
-                onClick={nextQuestion}
-                className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-              >
-                Next question →
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                try { localStorage.removeItem(storageKey); } catch {}
+              }}
+              className="rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-muted"
+            >
+              Stop and save progress
+            </button>
           </div>
         </div>
       )}
+
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
+            Practice · {qIdx + 1}/{bank.length}
+          </span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${difficultyClass}`}
+          >
+            {difficultyLabel} · {q.difficulty.toFixed(2)}
+          </span>
+          {q.tags.map((t) => (
+            <span
+              key={t}
+              className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground"
+            >
+              #{t}
+            </span>
+          ))}
+          {q.prerequisite_concept_ids.length > 0 && (
+            <span className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+              needs prerequisite
+            </span>
+          )}
+        </div>
+        <h3 className="mt-2 font-serif text-2xl font-semibold leading-snug">{q.question}</h3>
+        <div className="mt-6 space-y-3">
+          {q.options.map((opt, i) => {
+            const isSel = selected === i;
+            const isRight = i === q.correct_index;
+            const showState = locked && (isSel || isRight);
+            return (
+              <button
+                key={i}
+                onClick={() => onSelect(i)}
+                disabled={locked}
+                className={
+                  "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition " +
+                  (showState
+                    ? isRight
+                      ? "border-primary bg-primary/10"
+                      : "border-destructive/40 bg-destructive/10"
+                    : "border-border bg-background hover:border-primary/60 hover:bg-accent/30")
+                }
+              >
+                <span>{opt}</span>
+                {showState &&
+                  (isRight ? (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  ) : isSel ? (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  ) : null)}
+              </button>
+            );
+          })}
+        </div>
+        {locked && (
+          <div className="mt-6 space-y-4">
+            {!isCorrect && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="text-[11px] font-medium uppercase tracking-wide">
+                    Why you missed it
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed">
+                  {explaining ? "Thinking through your answer…" : (explanation ?? "…")}
+                </p>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {isCorrect
+                  ? "Nice — this concept just got more stable."
+                  : "Marked as struggling. We'll bring it back sooner."}
+                <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">
+                  Session {correctCount}/{answered}
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={retry}
+                  className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+                >
+                  Try again
+                </button>
+                <button
+                  onClick={nextQuestion}
+                  className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                >
+                  Next question →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -581,9 +647,11 @@ function PracticePanel({
 function ApplyPanel({
   ws,
   topicId,
+  onDone,
 }: {
   ws: TopicWorkspace;
   topicId: string;
+  onDone: () => void;
 }) {
   const qc = useQueryClient();
   const submit = useServerFn(submitAssignment);
@@ -600,6 +668,7 @@ function ApplyPanel({
   }
 
   const gated = ws.stage === "learn" || ws.stage === "practice";
+  const mastered = (result?.score ?? 0) >= 0.7 || ws.stage === "master";
 
   const onSubmit = async () => {
     if (!ws.assignment) return;
@@ -622,6 +691,32 @@ function ApplyPanel({
 
   return (
     <div className="space-y-6">
+      {mastered && (
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+          <div className="flex items-center gap-2 text-emerald-600">
+            <Award className="h-5 w-5" />
+            <span className="font-serif text-lg font-semibold">Topic mastered</span>
+          </div>
+          <p className="mt-2 text-sm text-foreground">
+            Strong work — this concept is now in your long-term memory model. We'll schedule reviews automatically.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={onDone}
+              className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+            >
+              Back to dashboard →
+            </button>
+            <button
+              onClick={() => setResponse("")}
+              className="rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-muted"
+            >
+              Write another response
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-border bg-card p-6">
         <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
           Assignment · AI graded
@@ -661,7 +756,7 @@ function ApplyPanel({
         )}
       </div>
 
-      {result && (
+      {result && !mastered && (
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="h-4 w-4" />
@@ -696,6 +791,70 @@ function ApplyPanel({
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+function MasteredPanel({
+  ws,
+  topicId,
+  onReview,
+}: {
+  ws: TopicWorkspace;
+  topicId: string;
+  onReview: () => void;
+}) {
+  const last = ws.state.last_reviewed_at ? new Date(ws.state.last_reviewed_at) : null;
+  const days = last ? Math.max(0, (Date.now() - last.getTime()) / 86_400_000) : 0;
+  const R = last ? Math.exp(-days / Math.max(0.1, ws.state.stability)) : 1;
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+        <div className="flex items-center gap-2 text-emerald-600">
+          <Trophy className="h-6 w-6" />
+          <span className="font-serif text-2xl font-semibold">Topic mastered</span>
+        </div>
+        <p className="mt-2 text-sm text-foreground">
+          This concept is in your long-term memory model. Current predicted recall: {" "}
+          <span className="font-semibold">{Math.round(R * 100)}%</span> with a stability of{" "}
+          {ws.state.stability.toFixed(1)} days.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={onReview}
+            className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+          >
+            Quick review →
+          </button>
+          <Link
+            to="/course"
+            className="rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-muted"
+          >
+            Browse course
+          </Link>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <h4 className="font-serif text-lg font-semibold">Memory metrics</h4>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Mastery</p>
+            <p className="mt-1 font-serif text-2xl font-semibold">{Math.round(ws.state.mastery * 100)}%</p>
+          </div>
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Stability</p>
+            <p className="mt-1 font-serif text-2xl font-semibold">{ws.state.stability.toFixed(1)}d</p>
+          </div>
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Last review</p>
+            <p className="mt-1 text-sm">
+              {last ? last.toLocaleDateString() : "Not reviewed yet"}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

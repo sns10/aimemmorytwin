@@ -1,19 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
-import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle, Zap } from "lucide-react";
 import {
   getStudentOverview,
   generateDailyBriefing,
 } from "@/lib/memorytwin.functions";
 import { getCourseTree } from "@/lib/course.functions";
-import { getPersonalityContext } from "@/lib/personality.functions";
+import { getPersonalityContext, logRecommendationEvent } from "@/lib/personality.functions";
 import { BrainVisualization } from "@/components/BrainVisualization";
 import { RetentionChart } from "@/components/RetentionChart";
 import { StudyPlan } from "@/components/StudyPlan";
 import { Onboarding, openOnboarding } from "@/components/Onboarding";
-import { nextActionFor } from "@/lib/stage";
+import { nextActionFor, stageBlurb } from "@/lib/stage";
 
 const overviewQuery = queryOptions({
   queryKey: ["overview"],
@@ -81,14 +81,53 @@ function Dashboard() {
   }, []);
 
   const allTopics = subjects.flatMap((s) => s.chapters.flatMap((c) => c.topics));
-  const priority: Record<string, number> = {
-    review: 0, learn: 1, practice: 2, apply: 3, master: 9,
-  };
-  const nextTopic = [...allTopics].sort(
-    (a, b) =>
-      (priority[a.stage] - priority[b.stage]) ||
-      (a.sort_order - b.sort_order),
-  )[0];
+
+  // Pick the single best next activity: review > learn > practice > apply > master.
+  // Within each stage, use the same lane ranking logic as StudyPlan.
+  const nextTopic = useMemo(() => {
+    const nowTs = Date.now();
+    const mastered = new Set(
+      allTopics.filter((t) => t.stage === "master" || t.stage === "review").map((t) => t.id),
+    );
+    const readyByTopic = new Map<string, boolean>();
+    for (const s of subjects) {
+      for (const ch of s.chapters) {
+        const sorted = [...ch.topics].sort((a, b) => a.sort_order - b.sort_order);
+        let ready = true;
+        for (const t of sorted) {
+          readyByTopic.set(t.id, ready);
+          if (t.stage === "learn") ready = false;
+        }
+      }
+    }
+    const scored = allTopics.map((t) => {
+      const last = t.last_reviewed_at ? new Date(t.last_reviewed_at).getTime() : null;
+      const days = last ? Math.max(0, (nowTs - last) / 86_400_000) : 0;
+      const R = last ? Math.exp(-days / Math.max(0.1, t.stability)) : 0.5;
+      const prereqReady = readyByTopic.get(t.id) ?? true;
+      let urgency = 0;
+      switch (t.stage) {
+        case "review":
+          urgency = 1000 + (1 - R) * 100;
+          break;
+        case "learn":
+          urgency = 800 + (prereqReady ? 50 : 0) - t.sort_order;
+          break;
+        case "practice":
+          urgency = 600 + (1 - t.mastery) * 100;
+          break;
+        case "apply":
+          urgency = 400 + t.mastery * 100;
+          break;
+        case "master":
+          urgency = 200 + R * 100;
+          break;
+      }
+      return { topic: t, R, prereqReady, urgency };
+    });
+    scored.sort((a, b) => b.urgency - a.urgency);
+    return scored[0]?.topic ?? null;
+  }, [allTopics, subjects]);
   const nextAction = nextTopic ? nextActionFor(nextTopic.stage, nextTopic.id) : null;
 
   const now = Date.now();
@@ -217,16 +256,34 @@ function Dashboard() {
               <Link
                 to={nextAction.href as "/topic/$id"}
                 params={{ id: nextTopic.id }}
+                onClick={() => {
+                  void logRecommendationEvent({
+                    data: {
+                      concept_id: nextTopic.id,
+                      kind: "click",
+                      lane: nextTopic.stage as "learn" | "practice" | "apply" | "review",
+                      explanation_mode: "characteristic",
+                      persuasive_type: null,
+                      profile_cluster: personality?.profile?.cluster ?? null,
+                    },
+                  }).catch(() => {});
+                }}
                 className={
-                  "group flex items-center justify-between border border-border bg-primary px-5 py-4 text-primary-foreground transition hover:bg-foreground " +
+                  "group relative flex items-center justify-between overflow-hidden border border-border bg-primary px-5 py-4 text-primary-foreground transition hover:bg-foreground " +
                   (ctaHighlight ? "ring-4 ring-primary/30 ring-offset-2 ring-offset-secondary animate-pulse" : "")
                 }
               >
-                <div>
-                  <div className="ink-caps text-primary-foreground/70">Continue · {nextAction.label}</div>
-                  <div className="mt-1 font-serif text-lg font-semibold">{nextTopic.name}</div>
+                <div className="relative z-10">
+                  <div className="inline-flex items-center gap-2 ink-caps text-primary-foreground/80">
+                    <Zap className="h-3.5 w-3.5" />
+                    Next best activity · {nextAction.label}
+                  </div>
+                  <div className="mt-1 font-serif text-xl font-semibold">{nextTopic.name}</div>
+                  <p className="mt-1 max-w-md text-xs text-primary-foreground/70">
+                    {stageBlurb(nextTopic.stage)}
+                  </p>
                 </div>
-                <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
+                <ArrowRight className="relative z-10 h-5 w-5 transition group-hover:translate-x-1" />
               </Link>
             )}
 
