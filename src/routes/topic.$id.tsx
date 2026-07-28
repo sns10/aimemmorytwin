@@ -136,31 +136,39 @@ function TopicPage() {
         {/* Stage checkpoints — independent lanes */}
         <StageCheckpoints ws={ws} active={tab} onPick={setTab} />
 
-        {/* Tabs */}
-        <div className="mt-8 flex gap-2 rounded-full border border-border bg-card p-1 text-sm">
-          {(["learn", "practice", "apply"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={
-                "flex-1 rounded-full px-3 py-1.5 transition " +
-                (tab === t
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground")
-              }
-            >
-              {t === "learn" ? "Learn" : t === "practice" ? "Practice" : "Apply"}
-            </button>
-          ))}
-        </div>
+        {ws.stage === "master" ? (
+          <MasteredPanel ws={ws} topicId={id} onReview={() => setTab("practice")} />
+        ) : (
+          <>
+            {/* Tabs */}
+            <div className="mt-8 flex gap-2 rounded-full border border-border bg-card p-1 text-sm">
+              {(["learn", "practice", "apply"] as Tab[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={
+                    "flex-1 rounded-full px-3 py-1.5 transition " +
+                    (tab === t
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground")
+                  }
+                >
+                  {t === "learn" ? "Learn" : t === "practice" ? "Practice" : "Apply"}
+                </button>
+              ))}
+            </div>
 
-        <div className="mt-6">
-          {tab === "learn" && (
-            <LearnPanel ws={ws} onOpenLesson={onOpenLesson} onDone={() => setTab("practice")} />
-          )}
-          {tab === "practice" && <PracticePanel ws={ws} topicId={id} />}
-          {tab === "apply" && <ApplyPanel ws={ws} topicId={id} />}
-        </div>
+            <div className="mt-6">
+              {tab === "learn" && (
+                <LearnPanel ws={ws} onOpenLesson={onOpenLesson} onDone={() => setTab("practice")} />
+              )}
+              {tab === "practice" && (
+                <PracticePanel ws={ws} topicId={id} onDone={() => setTab("apply")} />
+              )}
+              {tab === "apply" && <ApplyPanel ws={ws} topicId={id} onDone={() => navigate({ to: "/" })} />}
+            </div>
+          </>
+        )}
 
         <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
           <Save className="h-3.5 w-3.5" />
