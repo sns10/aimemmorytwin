@@ -256,16 +256,34 @@ function Dashboard() {
               <Link
                 to={nextAction.href as "/topic/$id"}
                 params={{ id: nextTopic.id }}
+                onClick={() => {
+                  void logRecommendationEvent({
+                    data: {
+                      concept_id: nextTopic.id,
+                      kind: "click",
+                      lane: nextTopic.stage as "learn" | "practice" | "apply" | "review",
+                      explanation_mode: "characteristic",
+                      persuasive_type: null,
+                      profile_cluster: personality?.profile?.cluster ?? null,
+                    },
+                  }).catch(() => {});
+                }}
                 className={
-                  "group flex items-center justify-between border border-border bg-primary px-5 py-4 text-primary-foreground transition hover:bg-foreground " +
+                  "group relative flex items-center justify-between overflow-hidden border border-border bg-primary px-5 py-4 text-primary-foreground transition hover:bg-foreground " +
                   (ctaHighlight ? "ring-4 ring-primary/30 ring-offset-2 ring-offset-secondary animate-pulse" : "")
                 }
               >
-                <div>
-                  <div className="ink-caps text-primary-foreground/70">Continue · {nextAction.label}</div>
-                  <div className="mt-1 font-serif text-lg font-semibold">{nextTopic.name}</div>
+                <div className="relative z-10">
+                  <div className="inline-flex items-center gap-2 ink-caps text-primary-foreground/80">
+                    <Zap className="h-3.5 w-3.5" />
+                    Next best activity · {nextAction.label}
+                  </div>
+                  <div className="mt-1 font-serif text-xl font-semibold">{nextTopic.name}</div>
+                  <p className="mt-1 max-w-md text-xs text-primary-foreground/70">
+                    {stageBlurb(nextTopic.stage)}
+                  </p>
                 </div>
-                <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
+                <ArrowRight className="relative z-10 h-5 w-5 transition group-hover:translate-x-1" />
               </Link>
             )}
 
