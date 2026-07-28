@@ -174,7 +174,7 @@ function StreakPanel({
             className="h-6 flex-1 bg-muted"
             style={
               h.count > 0
-                ? { backgroundColor: "hsl(var(--primary))", opacity: 0.25 + 0.75 * (h.count / max) }
+                ? { backgroundColor: "var(--primary)", opacity: 0.25 + 0.75 * (h.count / max) }
                 : undefined
             }
           />
