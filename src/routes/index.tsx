@@ -2,13 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle, Zap } from "lucide-react";
+import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle, Zap, Flame } from "lucide-react";
 import {
   getStudentOverview,
   generateDailyBriefing,
 } from "@/lib/memorytwin.functions";
 import { getCourseTree } from "@/lib/course.functions";
 import { getPersonalityContext, logRecommendationEvent } from "@/lib/personality.functions";
+import { getReviewQueue } from "@/lib/review.functions";
 import { BrainVisualization } from "@/components/BrainVisualization";
 import { RetentionChart } from "@/components/RetentionChart";
 import { StudyPlan } from "@/components/StudyPlan";
@@ -34,11 +35,18 @@ const personalityQuery = queryOptions({
   staleTime: 0,
 });
 
+const reviewSummaryQuery = queryOptions({
+  queryKey: ["review-queue"],
+  queryFn: () => getReviewQueue(),
+  staleTime: 0,
+});
+
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(overviewQuery);
     context.queryClient.ensureQueryData(courseQuery);
     context.queryClient.ensureQueryData(personalityQuery);
+    context.queryClient.ensureQueryData(reviewSummaryQuery);
   },
   component: Dashboard,
   errorComponent: ErrBoundary,
@@ -57,6 +65,7 @@ function Dashboard() {
   const { data } = useSuspenseQuery(overviewQuery);
   const { data: subjects } = useSuspenseQuery(courseQuery);
   const { data: personality } = useQuery(personalityQuery);
+  const { data: review } = useQuery(reviewSummaryQuery);
   const briefingFn = useServerFn(generateDailyBriefing);
   const briefingQ = useQuery({
     queryKey: ["briefing"],
@@ -195,6 +204,14 @@ function Dashboard() {
             </button>
             <Link to="/course" className="inline-flex items-center gap-1.5 hover:text-primary">
               <BookOpen className="h-3.5 w-3.5" /> Course
+            </Link>
+            <Link to="/review" className="inline-flex items-center gap-1.5 hover:text-primary">
+              <Flame className="h-3.5 w-3.5" /> Review
+              {review && review.due.length > 0 && (
+                <span className="rounded-full bg-primary px-1.5 py-px font-mono text-[10px] text-primary-foreground">
+                  {review.due.length}
+                </span>
+              )}
             </Link>
             <Link to="/history" className="inline-flex items-center gap-1.5 hover:text-primary">
               <History className="h-3.5 w-3.5" /> Activity
