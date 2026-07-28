@@ -135,6 +135,38 @@ export type Database = {
           },
         ]
       }
+      cohort_topic_stats: {
+        Row: {
+          cohort_size: number
+          concept_id: string
+          peers_completed: number
+          top_achievers_completed: number
+          updated_at: string
+        }
+        Insert: {
+          cohort_size?: number
+          concept_id: string
+          peers_completed?: number
+          top_achievers_completed?: number
+          updated_at?: string
+        }
+        Update: {
+          cohort_size?: number
+          concept_id?: string
+          peers_completed?: number
+          top_achievers_completed?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_topic_stats_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: true
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       concepts: {
         Row: {
           chapter_id: string | null
@@ -366,6 +398,45 @@ export type Database = {
           },
         ]
       }
+      personality_profiles: {
+        Row: {
+          agreeableness: number
+          assessed_at: string
+          cluster: string
+          conscientiousness: number
+          extraversion: number
+          math_confidence: number
+          neuroticism: number
+          openness: number
+          student_id: string
+          tailored_enabled: boolean
+        }
+        Insert: {
+          agreeableness?: number
+          assessed_at?: string
+          cluster?: string
+          conscientiousness?: number
+          extraversion?: number
+          math_confidence?: number
+          neuroticism?: number
+          openness?: number
+          student_id: string
+          tailored_enabled?: boolean
+        }
+        Update: {
+          agreeableness?: number
+          assessed_at?: string
+          cluster?: string
+          conscientiousness?: number
+          extraversion?: number
+          math_confidence?: number
+          neuroticism?: number
+          openness?: number
+          student_id?: string
+          tailored_enabled?: boolean
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           concept_id: string
@@ -415,6 +486,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      recommendation_events: {
+        Row: {
+          concept_id: string
+          created_at: string
+          explanation_mode: string
+          id: string
+          kind: string
+          lane: string
+          persuasive_type: string | null
+          profile_cluster: string | null
+          student_id: string
+        }
+        Insert: {
+          concept_id: string
+          created_at?: string
+          explanation_mode?: string
+          id?: string
+          kind?: string
+          lane?: string
+          persuasive_type?: string | null
+          profile_cluster?: string | null
+          student_id: string
+        }
+        Update: {
+          concept_id?: string
+          created_at?: string
+          explanation_mode?: string
+          id?: string
+          kind?: string
+          lane?: string
+          persuasive_type?: string | null
+          profile_cluster?: string | null
+          student_id?: string
+        }
+        Relationships: []
       }
       students: {
         Row: {

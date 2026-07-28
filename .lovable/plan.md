@@ -1,53 +1,47 @@
-# Plan: Submission document
+## What the paper adds that we don't have
 
-Create `SUBMISSION.md` at the project root — a focused 1–2 page brief (≈700–900 words) suitable as a hackathon / grant / course submission write-up. It stays distinct from `CONTEXT.md` (which is the technical reference); this document is persuasive and problem-first.
+Takami, Flanagan, Dai & Ogata (2023) — *Personality-based tailored explainable recommendation*. Their finding: recommendations that carry an **explanation matched to the learner's personality profile** got significantly higher usage (CVR ~2.4x the control) than the same recommendations with only item-characteristic explanations.
 
-## Structure
+Our engine already picks *what* to study (BKT + FSRS ranking, Learn/Practice/Apply/Review lanes). What we do not have is *why-you-should-do-it-now* framing tuned to the learner. That is exactly the paper's contribution, and it sits on top of our recommender without touching the math.
 
-1. **Title + one-line pitch**
-   *MemoryTwin — a live digital twin of a student's memory that tells them exactly what to study next.*
+## Feasible vs. not feasible here
 
-2. **The Problem (≈150 words)**
-   - Students don't know what to study next. Course players are linear; flashcard apps are blind to understanding; LMS dashboards show activity, not knowledge.
-   - Two invisible failures compound: **forgetting** (Ebbinghaus decay is silent) and **shallow mastery** (a lucky guess looks identical to real understanding).
-   - Result: wasted study time, cramming, and confidence that collapses on exam day.
+**Feasible now**
+- Big Five self-assessment (short 10-item TIPI-style scale + a "good at math" confidence item)
+- Profiling into the paper's three clusters: Diligent, Fearful, Agreeable
+- Persuasive explanation types per profile: Authority / Commitment / Peer
+- Quiz-characteristic explanations shown to everyone (the paper's control condition)
+- Logging of recommendation impressions and clicks → CVR panel, i.e. their outcome measure
 
-3. **Who it affects (≈120 words)**
-   - Secondary-school students (seed: 10th-grade Chemistry) preparing for high-stakes board / entrance exams.
-   - Self-learners on MOOCs who drop off because nothing tells them where they actually stand.
-   - Under-resourced learners without a tutor to diagnose weak spots.
-   - Teachers who need per-concept diagnostics, not just quiz scores.
+**Not feasible / adapted**
+- K-means over 217 real students: we have one demo learner. Adapted → nearest-centroid assignment against the paper's published cluster means (Table 2). Same three profiles, no population data needed.
+- "Three top achievers solved this" / "two classmates solved this": we have no real cohort. Adapted → a small seeded synthetic cohort of anonymous peers with per-topic completion counts, clearly labelled as a demo cohort. Commitment explanations ("2 more and you hit today's goal") are fully real — they come from our own event log.
+- 18-day A/B experiment: not runnable. Adapted → an in-app toggle (tailored vs. characteristic-only) plus a small metrics panel, so the mechanism is demonstrable and honest.
 
-4. **Why existing solutions fail (≈180 words)** — short comparison, not a table dump:
-   - **Khan Academy / Coursera / Byju's:** linear content, no per-concept probabilistic model, no forgetting curve.
-   - **Anki / Quizlet:** great spacing, zero understanding model — treats a lucky guess as knowledge.
-   - **Duolingo-style adaptive:** proprietary, single-domain, opaque; no transferable framework.
-   - **Generic ChatGPT tutors:** stateless — no memory of what the student knows, no scheduling, hallucinated confidence.
-   - Common gap: none maintain a **persistent, auditable per-student per-concept state** that combines *understanding* and *retention*.
+## What gets built
 
-5. **Our approach (≈250 words)** — the core novelty:
-   - **The twin.** One row per (student, concept) stores `p_know`, `stability_days`, `next_review_at`. This is a live model of the mind, not a log of activity.
-   - **Two orthogonal models, one plan.**
-     - *Mastery* via canonical 4-parameter Bayesian Knowledge Tracing (Corbett & Anderson 1995) with item-difficulty modulation and prerequisite-gated learning.
-     - *Retention* via Ebbinghaus / FSRS-lite exponential decay `R(t) = e^(−t/S)`.
-     - The cross-product of these two axes becomes the four Study Plan lanes: **Learn · Practice · Apply · Review**.
-   - **Deterministic math + generative language.** Recommendations are auditable Bayesian updates. AI (Gemini 2.5 Flash via Lovable AI Gateway) is used only for *explanation*: the Daily Synapse briefing, misconception feedback the moment a student answers wrong, and rubric-based grading of free-response tasks. AI never overrides the math.
-   - **The brain as literal state view.** A 3D react-three-fiber point cloud renders every concept node — color = state, size = mastery, pulse = fading risk. Hovering a node is hovering a probability distribution.
+1. **Personality profiling**
+   - New route `/profile` with the 10-item scale (1–7 Likert), scored into O/A/E/C/N + math confidence.
+   - Nearest-centroid classifier against the paper's Table 2 means (z-scored) → `diligent | fearful | agreeable`, stored on the student with the raw trait scores.
+   - Skippable; no profile ⇒ characteristic-only explanations (control behaviour).
 
-6. **Why it works (≈100 words)**
-   - Spaced repetition is the most robustly replicated result in learning science (~2× long-term retention vs. massed practice).
-   - BKT gives concept-level diagnostic granularity, so remediation is surgical.
-   - Prerequisite-gated learn rates prevent illusion-of-progress.
-   - Misconception explanations arrive at the moment of error — the highest-leverage feedback window.
-   - Optimistic UI keeps the answer→feedback loop under 100 ms — the felt responsiveness that sustains flow.
+2. **Tailored explanation layer**
+   - A pure module that, given (recommended topic, student profile, today's event counts, cohort stats), returns:
+     - a **characteristic explanation** — grounded in our own state model: "recall has fallen to 62%", "mastery 0.41, weakest in this chapter", "prerequisite now mastered"
+     - a **persuasive explanation** matched to profile: Authority (top-achiever completions) for Diligent, Commitment (daily-goal progress) for Fearful, Peer (classmate completions) for Agreeable
+   - Deterministic templates by default, with the option to have Lovable AI phrase the persuasive line from those exact facts — same hallucination guard we already use for the briefing (facts fixed, LLM only words them).
 
-7. **Status & stack (≈60 words)**
-   One-paragraph mention: built on TanStack Start + Lovable Cloud (Postgres + RLS) + Lovable AI Gateway, seeded with 10th-grade Chemistry and 50 tagged questions. Full course tree (Subject → Chapter → Topic → Lesson → Quiz → Assignment) wired to the twin so the probabilistic layer is anchored to real curriculum.
+3. **Wiring into the existing UI**
+   - Study plan lane cards and the dashboard recommendation list gain a two-line explanation block (characteristic, then persuasive), matching the paper's Fig. 5 layout.
+   - Onboarding gains a step explaining why the reason line is personalised.
 
-## Constraints
+4. **Engagement measurement**
+   - Log `recommendation_impression` and `recommendation_click` events (topic, lane, profile, explanation type).
+   - Small panel on `/history`: impressions, clicks, CVR, broken down by explanation mode — the paper's outcome metric, on our own data.
 
-- Length ≈ 1.5 pages of A4 at 11pt (700–900 words).
-- No emojis. Plain markdown, no HTML.
-- Written in a submission voice — persuasive, first-person plural, not a README.
-- No duplicate of `CONTEXT.md`; this one leads with the problem, not the architecture.
-- Only create `SUBMISSION.md` — no other files touched.
+## Technical notes
+
+- New tables: `personality_profiles` (student_id, O/A/E/C/N, math_confidence, cluster, assessed_at) and `cohort_topic_stats` (topic_id, peers_completed, top_achievers_completed) — both with GRANTs and RLS following our existing pattern.
+- New `src/lib/personality.server.ts` (centroids, z-scoring, nearest-centroid, explanation templates) + server fns in `src/lib/personality.functions.ts`.
+- Recommendation ranking in `getRecommendations` / `StudyPlan` is unchanged — personality affects presentation only, which is precisely the paper's design (explanations are generated independently of how the recommendation is made).
+- README/CONTEXT get a short section citing the paper and stating the demo-cohort caveat.

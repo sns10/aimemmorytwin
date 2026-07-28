@@ -1,11 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Brain, BookOpen, CheckCircle2, XCircle, Feather } from "lucide-react";
 import { getHistory, type HistoryRow } from "@/lib/course.functions";
+import { getEngagementStats } from "@/lib/personality.functions";
 
 const historyQuery = queryOptions({
   queryKey: ["history"],
   queryFn: () => getHistory(),
+  staleTime: 0,
+});
+
+const engagementQuery = queryOptions({
+  queryKey: ["engagement"],
+  queryFn: () => getEngagementStats(),
   staleTime: 0,
 });
 
@@ -26,6 +33,7 @@ export const Route = createFileRoute("/history")({
 
 function HistoryPage() {
   const { data: rows } = useSuspenseQuery(historyQuery);
+  const { data: engagement } = useQuery(engagementQuery);
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/60">
@@ -45,6 +53,32 @@ function HistoryPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Every lesson, quiz answer, and assignment — most recent first.
         </p>
+
+        {engagement && engagement.some((e) => e.impressions > 0) && (
+          <section className="mt-8 rounded-2xl border border-border bg-card p-5">
+            <h2 className="font-serif text-lg font-semibold">Recommendation engagement</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              How often you act on a top pick, split by how it was explained. Tailored
+              picks add a personality-matched line; neutral picks show only the
+              mastery/recall reason.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {engagement.map((e) => (
+                <div key={e.mode} className="rounded-xl border border-border/70 px-4 py-3">
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    {e.mode === "tailored" ? "Tailored explanation" : "Neutral explanation"}
+                  </div>
+                  <div className="mt-1 font-serif text-3xl font-semibold">
+                    {Math.round(e.cvr * 100)}%
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {e.clicks} acted / {e.impressions} shown
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {rows.length === 0 ? (
           <p className="mt-8 text-sm text-muted-foreground">
