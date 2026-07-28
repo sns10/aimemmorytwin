@@ -318,7 +318,7 @@ function LearnPanel({
   onDone: () => void;
 }) {
   const [done, setDone] = useState(false);
-  if (done || ws.has_viewed_lesson) {
+  if (done || ws.lessons.some((l) => l.viewed)) {
     return (
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6">
         <div className="flex items-center gap-2 text-emerald-600">
