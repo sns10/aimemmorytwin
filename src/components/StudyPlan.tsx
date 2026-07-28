@@ -11,7 +11,7 @@ import {
   type PersuasiveType,
 } from "@/lib/personality";
 import type { PersonalityContext } from "@/lib/personality.functions";
-import { logRecommendationEvent } from "@/lib/personality.functions";
+import { logRecEvent } from "@/lib/rec-log";
 
 type LaneKey = "learn" | "practice" | "apply" | "review";
 
@@ -68,16 +68,14 @@ function RecImpression({
     const key = `${conceptId}:${mode}`;
     if (sent.current === key) return;
     sent.current = key;
-    void logRecommendationEvent({
-      data: {
+    void logRecEvent({
         concept_id: conceptId,
         kind: "impression",
         lane,
         explanation_mode: mode,
         persuasive_type: persuasiveType,
         profile_cluster: cluster,
-      },
-    }).catch(() => {});
+      }).catch(() => {});
   }, [conceptId, lane, mode, persuasiveType, cluster]);
   return null;
 }
@@ -314,8 +312,7 @@ export function StudyPlan({
                       to="/topic/$id"
                       params={{ id: first.topic.id }}
                       onClick={() => {
-                        void logRecommendationEvent({
-                          data: {
+                        void logRecEvent({
                             concept_id: first.topic.id,
                             kind: "click",
                             lane: lane.key,
@@ -324,8 +321,7 @@ export function StudyPlan({
                               : "characteristic",
                             persuasive_type: firstExplain.persuasive?.type ?? null,
                             profile_cluster: cluster,
-                          },
-                        }).catch(() => {});
+                          }).catch(() => {});
                       }}
                       className="mt-4 flex items-center justify-between rounded-xl border border-primary/40 bg-background px-3 py-3 shadow-sm transition hover:border-primary"
                     >
