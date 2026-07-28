@@ -268,6 +268,34 @@ function Dashboard() {
             </div>
 
             {/* Primary CTA */}
+            {review && (
+              <Link
+                to="/review"
+                className="flex items-center justify-between border border-border bg-card px-4 py-3 transition hover:border-foreground/40"
+              >
+                <div className="flex items-center gap-3">
+                  <Flame
+                    className={
+                      "h-5 w-5 " +
+                      (review.streak.current_streak > 0 ? "text-primary" : "text-muted-foreground")
+                    }
+                  />
+                  <div>
+                    <div className="text-sm font-semibold">
+                      {review.due.length > 0
+                        ? `${review.due.length} card${review.due.length === 1 ? "" : "s"} due for review`
+                        : "Review queue clear"}
+                    </div>
+                    <div className="ink-caps mt-0.5 text-muted-foreground">
+                      {review.streak.current_streak}-day streak ·{" "}
+                      {review.streak.reviews_today} answered today
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            )}
+
             {nextTopic && nextAction && (
               <Link
                 to={nextAction.href as "/topic/$id"}
