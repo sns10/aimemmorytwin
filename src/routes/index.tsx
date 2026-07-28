@@ -263,7 +263,11 @@ function Dashboard() {
             )}
 
             {/* Study plan lanes — compact */}
-            <StudyPlan subjects={subjects} highlightLane={tourTargets.lane} />
+            <StudyPlan
+              subjects={subjects}
+              highlightLane={tourTargets.lane}
+              personality={personality ?? null}
+            />
 
             {/* Course quick nav */}
             <div className="border border-border bg-card">
