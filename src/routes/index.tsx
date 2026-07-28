@@ -198,9 +198,7 @@ function Dashboard() {
             <Link to="/history" className="inline-flex items-center gap-1.5 hover:text-primary">
               <History className="h-3.5 w-3.5" /> Activity
             </Link>
-            <span className="rounded-sm border border-border bg-background px-2 py-1 text-primary">
-              {data.student.name}
-            </span>
+            <AccountMenu fallbackName={data.student.name} />
           </nav>
         </div>
       </header>
