@@ -35,10 +35,6 @@ type Lane = {
 };
 
 function retrievability(t: TopicNode, now: number): number {
-  return retrievabilityImpl(t, now);
-}
-
-function retrievabilityImpl(t: TopicNode, now: number): number {
   const last = t.last_reviewed_at ? new Date(t.last_reviewed_at).getTime() : null;
   if (!last) return 0.5; // cold start
   const days = Math.max(0, (now - last) / 86_400_000);
