@@ -317,6 +317,27 @@ function LearnPanel({
   onOpenLesson: () => void;
   onDone: () => void;
 }) {
+  const [done, setDone] = useState(false);
+  if (done || ws.has_viewed_lesson) {
+    return (
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+        <div className="flex items-center gap-2 text-emerald-600">
+          <CheckCircle2 className="h-5 w-5" />
+          <span className="font-serif text-lg font-semibold">Lesson complete</span>
+        </div>
+        <p className="mt-2 text-sm text-foreground">
+          Awareness built. The next step is to drill a few questions so the idea
+          sticks.
+        </p>
+        <button
+          onClick={onDone}
+          className="mt-4 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+        >
+          Start practice →
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       {ws.lessons.map((l) => (
@@ -355,7 +376,7 @@ function LearnPanel({
       <button
         onClick={() => {
           onOpenLesson();
-          onDone();
+          setDone(true);
         }}
         className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
       >
