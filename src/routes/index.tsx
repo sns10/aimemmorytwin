@@ -81,14 +81,53 @@ function Dashboard() {
   }, []);
 
   const allTopics = subjects.flatMap((s) => s.chapters.flatMap((c) => c.topics));
-  const priority: Record<string, number> = {
-    review: 0, learn: 1, practice: 2, apply: 3, master: 9,
-  };
-  const nextTopic = [...allTopics].sort(
-    (a, b) =>
-      (priority[a.stage] - priority[b.stage]) ||
-      (a.sort_order - b.sort_order),
-  )[0];
+
+  // Pick the single best next activity: review > learn > practice > apply > master.
+  // Within each stage, use the same lane ranking logic as StudyPlan.
+  const nextTopic = useMemo(() => {
+    const nowTs = Date.now();
+    const mastered = new Set(
+      allTopics.filter((t) => t.stage === "master" || t.stage === "review").map((t) => t.id),
+    );
+    const readyByTopic = new Map<string, boolean>();
+    for (const s of subjects) {
+      for (const ch of s.chapters) {
+        const sorted = [...ch.topics].sort((a, b) => a.sort_order - b.sort_order);
+        let ready = true;
+        for (const t of sorted) {
+          readyByTopic.set(t.id, ready);
+          if (t.stage === "learn") ready = false;
+        }
+      }
+    }
+    const scored = allTopics.map((t) => {
+      const last = t.last_reviewed_at ? new Date(t.last_reviewed_at).getTime() : null;
+      const days = last ? Math.max(0, (nowTs - last) / 86_400_000) : 0;
+      const R = last ? Math.exp(-days / Math.max(0.1, t.stability)) : 0.5;
+      const prereqReady = readyByTopic.get(t.id) ?? true;
+      let urgency = 0;
+      switch (t.stage) {
+        case "review":
+          urgency = 1000 + (1 - R) * 100;
+          break;
+        case "learn":
+          urgency = 800 + (prereqReady ? 50 : 0) - t.sort_order;
+          break;
+        case "practice":
+          urgency = 600 + (1 - t.mastery) * 100;
+          break;
+        case "apply":
+          urgency = 400 + t.mastery * 100;
+          break;
+        case "master":
+          urgency = 200 + R * 100;
+          break;
+      }
+      return { topic: t, R, prereqReady, urgency };
+    });
+    scored.sort((a, b) => b.urgency - a.urgency);
+    return scored[0]?.topic ?? null;
+  }, [allTopics, subjects]);
   const nextAction = nextTopic ? nextActionFor(nextTopic.stage, nextTopic.id) : null;
 
   const now = Date.now();
