@@ -12,6 +12,7 @@ import { getPersonalityContext, logRecommendationEvent } from "@/lib/personality
 import { BrainVisualization } from "@/components/BrainVisualization";
 import { RetentionChart } from "@/components/RetentionChart";
 import { StudyPlan } from "@/components/StudyPlan";
+import { AccountMenu } from "@/components/AccountMenu";
 import { Onboarding, openOnboarding } from "@/components/Onboarding";
 import { nextActionFor, stageBlurb } from "@/lib/stage";
 
