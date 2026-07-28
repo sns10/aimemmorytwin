@@ -11,7 +11,7 @@ import {
   type PersuasiveType,
 } from "@/lib/personality";
 import type { PersonalityContext } from "@/lib/personality.functions";
-import { logRecommendationEvent } from "@/lib/personality.functions";
+import { logRecEvent } from "@/lib/rec-log";
 
 type LaneKey = "learn" | "practice" | "apply" | "review";
 
@@ -68,8 +68,7 @@ function RecImpression({
     const key = `${conceptId}:${mode}`;
     if (sent.current === key) return;
     sent.current = key;
-    void logRecommendationEvent({
-      data: {
+    void logRecEvent({
         concept_id: conceptId,
         kind: "impression",
         lane,
@@ -314,8 +313,7 @@ export function StudyPlan({
                       to="/topic/$id"
                       params={{ id: first.topic.id }}
                       onClick={() => {
-                        void logRecommendationEvent({
-                          data: {
+                        void logRecEvent({
                             concept_id: first.topic.id,
                             kind: "click",
                             lane: lane.key,

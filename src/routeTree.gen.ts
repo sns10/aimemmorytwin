@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TopicIdRouteImport } from './routes/topic.$id'
 import { Route as ConceptIdRouteImport } from './routes/concept.$id'
+import { Route as ApiRecEventRouteImport } from './routes/api/rec-event'
 
 const ReviewRoute = ReviewRouteImport.update({
   id: '/review',
@@ -64,6 +65,11 @@ const ConceptIdRoute = ConceptIdRouteImport.update({
   path: '/concept/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRecEventRoute = ApiRecEventRouteImport.update({
+  id: '/api/rec-event',
+  path: '/api/rec-event',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
+  '/api/rec-event': typeof ApiRecEventRoute
   '/concept/$id': typeof ConceptIdRoute
   '/topic/$id': typeof TopicIdRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
+  '/api/rec-event': typeof ApiRecEventRoute
   '/concept/$id': typeof ConceptIdRoute
   '/topic/$id': typeof TopicIdRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
+  '/api/rec-event': typeof ApiRecEventRoute
   '/concept/$id': typeof ConceptIdRoute
   '/topic/$id': typeof TopicIdRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/quiz'
     | '/review'
+    | '/api/rec-event'
     | '/concept/$id'
     | '/topic/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/quiz'
     | '/review'
+    | '/api/rec-event'
     | '/concept/$id'
     | '/topic/$id'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/quiz'
     | '/review'
+    | '/api/rec-event'
     | '/concept/$id'
     | '/topic/$id'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   QuizRoute: typeof QuizRoute
   ReviewRoute: typeof ReviewRoute
+  ApiRecEventRoute: typeof ApiRecEventRoute
   ConceptIdRoute: typeof ConceptIdRoute
   TopicIdRoute: typeof TopicIdRoute
 }
@@ -212,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConceptIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/rec-event': {
+      id: '/api/rec-event'
+      path: '/api/rec-event'
+      fullPath: '/api/rec-event'
+      preLoaderRoute: typeof ApiRecEventRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   QuizRoute: QuizRoute,
   ReviewRoute: ReviewRoute,
+  ApiRecEventRoute: ApiRecEventRoute,
   ConceptIdRoute: ConceptIdRoute,
   TopicIdRoute: TopicIdRoute,
 }

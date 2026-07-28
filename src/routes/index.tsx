@@ -8,7 +8,8 @@ import {
   generateDailyBriefing,
 } from "@/lib/memorytwin.functions";
 import { getCourseTree } from "@/lib/course.functions";
-import { getPersonalityContext, logRecommendationEvent } from "@/lib/personality.functions";
+import { getPersonalityContext } from "@/lib/personality.functions";
+import { logRecEvent } from "@/lib/rec-log";
 import { getReviewQueue } from "@/lib/review.functions";
 import { BrainVisualization } from "@/components/BrainVisualization";
 import { RetentionChart } from "@/components/RetentionChart";
@@ -301,8 +302,7 @@ function Dashboard() {
                 to={nextAction.href as "/topic/$id"}
                 params={{ id: nextTopic.id }}
                 onClick={() => {
-                  void logRecommendationEvent({
-                    data: {
+                  void logRecEvent({
                       concept_id: nextTopic.id,
                       kind: "click",
                       lane: nextTopic.stage as "learn" | "practice" | "apply" | "review",
