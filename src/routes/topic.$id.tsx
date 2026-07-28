@@ -806,7 +806,7 @@ function MasteredPanel({
 }) {
   const last = ws.state.last_reviewed_at ? new Date(ws.state.last_reviewed_at) : null;
   const days = last ? Math.max(0, (Date.now() - last.getTime()) / 86_400_000) : 0;
-  const R = last ? Math.exp(-days / Math.max(0.1, ws.state.memory_stability)) : 1;
+  const R = last ? Math.exp(-days / Math.max(0.1, ws.state.stability)) : 1;
 
   return (
     <div className="space-y-6">
@@ -818,7 +818,7 @@ function MasteredPanel({
         <p className="mt-2 text-sm text-foreground">
           This concept is in your long-term memory model. Current predicted recall: {" "}
           <span className="font-semibold">{Math.round(R * 100)}%</span> with a stability of{" "}
-          {ws.state.memory_stability.toFixed(1)} days.
+          {ws.state.stability.toFixed(1)} days.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
