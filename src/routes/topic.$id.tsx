@@ -646,9 +646,11 @@ function PracticePanel({
 function ApplyPanel({
   ws,
   topicId,
+  onDone,
 }: {
   ws: TopicWorkspace;
   topicId: string;
+  onDone: () => void;
 }) {
   const qc = useQueryClient();
   const submit = useServerFn(submitAssignment);
@@ -665,6 +667,7 @@ function ApplyPanel({
   }
 
   const gated = ws.stage === "learn" || ws.stage === "practice";
+  const mastered = (result?.score ?? 0) >= 0.7 || ws.stage === "master";
 
   const onSubmit = async () => {
     if (!ws.assignment) return;
@@ -687,6 +690,32 @@ function ApplyPanel({
 
   return (
     <div className="space-y-6">
+      {mastered && (
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+          <div className="flex items-center gap-2 text-emerald-600">
+            <Award className="h-5 w-5" />
+            <span className="font-serif text-lg font-semibold">Topic mastered</span>
+          </div>
+          <p className="mt-2 text-sm text-foreground">
+            Strong work — this concept is now in your long-term memory model. We'll schedule reviews automatically.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={onDone}
+              className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+            >
+              Back to dashboard →
+            </button>
+            <button
+              onClick={() => setResponse("")}
+              className="rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-muted"
+            >
+              Write another response
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-border bg-card p-6">
         <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
           Assignment · AI graded
@@ -726,7 +755,7 @@ function ApplyPanel({
         )}
       </div>
 
-      {result && (
+      {result && !mastered && (
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="h-4 w-4" />
