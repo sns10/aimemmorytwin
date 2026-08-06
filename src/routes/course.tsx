@@ -45,6 +45,7 @@ function CoursePage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-10">
+        <DemoBanner className="mb-8" />
         {subjects.map((subj) => (
           <section key={subj.id} className="mb-14">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
