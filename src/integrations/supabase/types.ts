@@ -530,6 +530,7 @@ export type Database = {
           daily_briefing: string | null
           id: string
           name: string
+          placement_completed_at: string | null
           user_id: string | null
         }
         Insert: {
@@ -538,6 +539,7 @@ export type Database = {
           daily_briefing?: string | null
           id?: string
           name: string
+          placement_completed_at?: string | null
           user_id?: string | null
         }
         Update: {
@@ -546,6 +548,7 @@ export type Database = {
           daily_briefing?: string | null
           id?: string
           name?: string
+          placement_completed_at?: string | null
           user_id?: string | null
         }
         Relationships: []

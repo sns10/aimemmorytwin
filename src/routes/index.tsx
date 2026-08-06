@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -17,6 +17,8 @@ import { StudyPlan } from "@/components/StudyPlan";
 import { AccountMenu } from "@/components/AccountMenu";
 import { Onboarding, openOnboarding } from "@/components/Onboarding";
 import { nextActionFor, stageBlurb } from "@/lib/stage";
+import { DemoBanner } from "@/components/DemoBanner";
+import { sessionQuery } from "@/lib/session-query";
 
 const overviewQuery = queryOptions({
   queryKey: ["overview"],
@@ -43,7 +45,9 @@ const reviewSummaryQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/")({
+  ssr: false,
   loader: ({ context }) => {
+    context.queryClient.ensureQueryData(sessionQuery);
     context.queryClient.ensureQueryData(overviewQuery);
     context.queryClient.ensureQueryData(courseQuery);
     context.queryClient.ensureQueryData(personalityQuery);
@@ -63,10 +67,15 @@ function ErrBoundary({ error }: { error: Error }) {
 }
 
 function Dashboard() {
+  const navigate = useNavigate();
   const { data } = useSuspenseQuery(overviewQuery);
   const { data: subjects } = useSuspenseQuery(courseQuery);
   const { data: personality } = useQuery(personalityQuery);
   const { data: review } = useQuery(reviewSummaryQuery);
+  const { data: session } = useQuery(sessionQuery);
+  useEffect(() => {
+    if (session?.needsPlacement) navigate({ to: "/placement", replace: true });
+  }, [session?.needsPlacement, navigate]);
   const briefingFn = useServerFn(generateDailyBriefing);
   const briefingQ = useQuery({
     queryKey: ["briefing"],
@@ -226,6 +235,7 @@ function Dashboard() {
 
       {/* Split-screen instrument: brain | briefing + plan */}
       <main className="mx-auto max-w-[1400px] p-4 sm:p-6">
+        <DemoBanner className="mb-4" />
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
           {/* LEFT — 3D brain instrument */}
           <section className="relative min-h-[560px] overflow-hidden rounded-sm border border-border bg-card shadow-sm lg:h-[calc(100vh-6.5rem)]">

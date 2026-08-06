@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PlacementRouteImport } from './routes/placement'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as CourseRouteImport } from './routes/course'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -33,6 +34,11 @@ const QuizRoute = QuizRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacementRoute = PlacementRouteImport.update({
+  id: '/placement',
+  path: '/placement',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/course': typeof CourseRoute
   '/history': typeof HistoryRoute
+  '/placement': typeof PlacementRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/course': typeof CourseRoute
   '/history': typeof HistoryRoute
+  '/placement': typeof PlacementRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/course': typeof CourseRoute
   '/history': typeof HistoryRoute
+  '/placement': typeof PlacementRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/course'
     | '/history'
+    | '/placement'
     | '/profile'
     | '/quiz'
     | '/review'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/course'
     | '/history'
+    | '/placement'
     | '/profile'
     | '/quiz'
     | '/review'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/course'
     | '/history'
+    | '/placement'
     | '/profile'
     | '/quiz'
     | '/review'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CourseRoute: typeof CourseRoute
   HistoryRoute: typeof HistoryRoute
+  PlacementRoute: typeof PlacementRoute
   ProfileRoute: typeof ProfileRoute
   QuizRoute: typeof QuizRoute
   ReviewRoute: typeof ReviewRoute
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/placement': {
+      id: '/placement'
+      path: '/placement'
+      fullPath: '/placement'
+      preLoaderRoute: typeof PlacementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CourseRoute: CourseRoute,
   HistoryRoute: HistoryRoute,
+  PlacementRoute: PlacementRoute,
   ProfileRoute: ProfileRoute,
   QuizRoute: QuizRoute,
   ReviewRoute: ReviewRoute,
@@ -250,13 +271,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

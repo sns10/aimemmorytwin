@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Check, Flame, X, CalendarClock, Sparkles } from "lucide-react";
 import { getReviewQueue, type ReviewItem } from "@/lib/review.functions";
 import { submitEvent, explainMisconception } from "@/lib/memorytwin.functions";
+import { DemoBanner } from "@/components/DemoBanner";
 
 const reviewQuery = queryOptions({
   queryKey: ["review-queue"],
@@ -13,6 +14,7 @@ const reviewQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/review")({
+  ssr: false,
   loader: ({ context }) => context.queryClient.ensureQueryData(reviewQuery),
   component: ReviewPage,
   head: () => ({
@@ -61,6 +63,7 @@ function ReviewPage() {
       </header>
 
       <main className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6">
+        <DemoBanner />
         <StreakPanel streak={data.streak} dueCount={data.due.length} />
 
         {finished ? (

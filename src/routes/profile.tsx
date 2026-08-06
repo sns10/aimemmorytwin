@@ -23,6 +23,7 @@ const personalityQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/profile")({
+  ssr: false,
   loader: ({ context }) => context.queryClient.ensureQueryData(personalityQuery),
   component: ProfilePage,
   errorComponent: ({ error }: { error: Error }) => (
