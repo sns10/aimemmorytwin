@@ -3,6 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Brain, ChevronRight } from "lucide-react";
 import { getCourseTree } from "@/lib/course.functions";
 import { StageBadge } from "@/components/StageBadge";
+import { DemoBanner } from "@/components/DemoBanner";
 import { nextActionFor, stageBlurb } from "@/lib/stage";
 
 const treeQuery = queryOptions({
@@ -12,6 +13,7 @@ const treeQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/course")({
+  ssr: false,
   loader: ({ context }) => context.queryClient.ensureQueryData(treeQuery),
   component: CoursePage,
   errorComponent: ({ error }: { error: Error }) => (
