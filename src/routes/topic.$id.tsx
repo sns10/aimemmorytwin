@@ -41,6 +41,7 @@ const workspaceQuery = (id: string) =>
   });
 
 export const Route = createFileRoute("/topic/$id")({
+  ssr: false,
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(workspaceQuery(params.id)),
   component: TopicPage,
@@ -90,6 +91,7 @@ function TopicPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-6 py-10">
+        <DemoBanner className="mb-6" />
         <p className="text-xs uppercase tracking-wide text-muted-foreground">
           {ws.topic.subject} · {ws.topic.chapter_name}
         </p>
