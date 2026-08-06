@@ -17,6 +17,7 @@ const recsQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/quiz")({
+  ssr: false,
   loader: ({ context }) => context.queryClient.ensureQueryData(recsQuery),
   component: Quiz,
   errorComponent: ({ error }: { error: Error }) => (
