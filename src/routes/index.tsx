@@ -226,6 +226,9 @@ function Dashboard() {
             <Link to="/history" className="inline-flex items-center gap-1.5 hover:text-primary">
               <History className="h-3.5 w-3.5" /> Activity
             </Link>
+            <Link to="/timeline" className="inline-flex items-center gap-1.5 hover:text-primary">
+              <History className="h-3.5 w-3.5" /> Timeline
+            </Link>
             <AccountMenu fallbackName={data.student.name} />
           </nav>
         </div>

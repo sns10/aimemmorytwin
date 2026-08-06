@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { LogOut, User } from "lucide-react";
+import { LogOut, Shield, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { checkAdmin } from "@/lib/admin.functions";
 
 /** Session-aware sign-in affordance for the app header. */
 export function AccountMenu({ fallbackName }: { fallbackName: string }) {
@@ -10,6 +11,13 @@ export function AccountMenu({ fallbackName }: { fallbackName: string }) {
   const queryClient = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+
+  const { data: admin } = useQuery({
+    queryKey: ["is-admin", email],
+    queryFn: () => checkAdmin(),
+    enabled: Boolean(email),
+    staleTime: 5 * 60_000,
+  });
 
   useEffect(() => {
     let active = true;
@@ -55,6 +63,11 @@ export function AccountMenu({ fallbackName }: { fallbackName: string }) {
 
   return (
     <span className="inline-flex items-center gap-2">
+      {admin?.isAdmin && (
+        <Link to="/admin" className="inline-flex items-center gap-1.5 hover:text-primary">
+          <Shield className="h-3.5 w-3.5" /> Admin
+        </Link>
+      )}
       <span className="rounded-sm border border-border bg-background px-2 py-1 text-primary normal-case tracking-normal">
         {email}
       </span>
