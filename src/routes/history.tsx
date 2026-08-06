@@ -3,6 +3,7 @@ import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query"
 import { ArrowLeft, Brain, BookOpen, CheckCircle2, XCircle, Feather } from "lucide-react";
 import { getHistory, type HistoryRow } from "@/lib/course.functions";
 import { getEngagementStats } from "@/lib/personality.functions";
+import { DemoBanner } from "@/components/DemoBanner";
 
 const historyQuery = queryOptions({
   queryKey: ["history"],
@@ -17,6 +18,7 @@ const engagementQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/history")({
+  ssr: false,
   loader: ({ context }) => context.queryClient.ensureQueryData(historyQuery),
   component: HistoryPage,
   errorComponent: ({ error }: { error: Error }) => (
@@ -49,6 +51,7 @@ function HistoryPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-10">
+        <DemoBanner className="mb-6" />
         <h1 className="font-serif text-4xl font-semibold">Learning timeline</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Every lesson, quiz answer, and assignment — most recent first.
