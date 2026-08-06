@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, XCircle, Brain } from "lucide-react";
 import { getConceptDetail } from "@/lib/memorytwin.functions";
+import { DemoBanner } from "@/components/DemoBanner";
 
 const conceptDetailQuery = (id: string) =>
   queryOptions({
@@ -11,6 +12,7 @@ const conceptDetailQuery = (id: string) =>
   });
 
 export const Route = createFileRoute("/concept/$id")({
+  ssr: false,
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(conceptDetailQuery(params.id)),
   component: ConceptDetail,
@@ -78,6 +80,7 @@ function ConceptDetail() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-10">
+        <DemoBanner className="mb-6" />
         <p className="text-xs font-medium uppercase tracking-wide text-primary">
           {concept.subject}
         </p>
