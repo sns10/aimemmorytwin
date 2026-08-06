@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TimelineRouteImport } from './routes/timeline'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -21,6 +22,11 @@ import { Route as TopicIdRouteImport } from './routes/topic.$id'
 import { Route as ConceptIdRouteImport } from './routes/concept.$id'
 import { Route as ApiRecEventRouteImport } from './routes/api/rec-event'
 
+const TimelineRoute = TimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReviewRoute = ReviewRouteImport.update({
   id: '/review',
   path: '/review',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
+  '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
   '/concept/$id': typeof ConceptIdRoute
   '/topic/$id': typeof TopicIdRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
+  '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
   '/concept/$id': typeof ConceptIdRoute
   '/topic/$id': typeof TopicIdRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
+  '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
   '/concept/$id': typeof ConceptIdRoute
   '/topic/$id': typeof TopicIdRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/quiz'
     | '/review'
+    | '/timeline'
     | '/api/rec-event'
     | '/concept/$id'
     | '/topic/$id'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/quiz'
     | '/review'
+    | '/timeline'
     | '/api/rec-event'
     | '/concept/$id'
     | '/topic/$id'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/quiz'
     | '/review'
+    | '/timeline'
     | '/api/rec-event'
     | '/concept/$id'
     | '/topic/$id'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   QuizRoute: typeof QuizRoute
   ReviewRoute: typeof ReviewRoute
+  TimelineRoute: typeof TimelineRoute
   ApiRecEventRoute: typeof ApiRecEventRoute
   ConceptIdRoute: typeof ConceptIdRoute
   TopicIdRoute: typeof TopicIdRoute
@@ -175,6 +188,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/timeline': {
+      id: '/timeline'
+      path: '/timeline'
+      fullPath: '/timeline'
+      preLoaderRoute: typeof TimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/review': {
       id: '/review'
       path: '/review'
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   QuizRoute: QuizRoute,
   ReviewRoute: ReviewRoute,
+  TimelineRoute: TimelineRoute,
   ApiRecEventRoute: ApiRecEventRoute,
   ConceptIdRoute: ConceptIdRoute,
   TopicIdRoute: TopicIdRoute,
@@ -271,13 +292,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
