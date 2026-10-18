@@ -2,11 +2,20 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, ArrowRight, BookOpen, History, ChevronRight, HelpCircle, Zap, Flame } from "lucide-react";
 import {
-  getStudentOverview,
-  generateDailyBriefing,
-} from "@/lib/memorytwin.functions";
+  Sparkles,
+  ArrowRight,
+  BookOpen,
+  History,
+  ChevronRight,
+  HelpCircle,
+  Zap,
+  Flame,
+  GraduationCap,
+  BarChart3,
+  Cpu,
+} from "lucide-react";
+import { getStudentOverview, generateDailyBriefing } from "@/lib/memorytwin.functions";
 import { getCourseTree } from "@/lib/course.functions";
 import { getPersonalityContext } from "@/lib/personality.functions";
 import { logRecEvent } from "@/lib/rec-log";
@@ -59,11 +68,7 @@ export const Route = createFileRoute("/")({
 });
 
 function ErrBoundary({ error }: { error: Error }) {
-  return (
-    <div className="p-10 text-sm text-destructive">
-      Something went wrong: {error.message}
-    </div>
-  );
+  return <div className="p-10 text-sm text-destructive">Something went wrong: {error.message}</div>;
 }
 
 function Dashboard() {
@@ -163,14 +168,20 @@ function Dashboard() {
 
   // Translate the current tour step into concrete UI targets.
   const tourTargets = (() => {
-    if (!tour) return { nodeId: null as string | null, lane: null as "learn" | "practice" | "apply" | "review" | null, cta: false };
+    if (!tour)
+      return {
+        nodeId: null as string | null,
+        lane: null as "learn" | "practice" | "apply" | "review" | null,
+        cta: false,
+      };
     const byMastery = [...data.concepts].sort(
       (a, b) => b.state.mastery_probability - a.state.mastery_probability,
     );
     const consolidated = byMastery.find((c) => c.state.mastery_probability >= 0.8) ?? byMastery[0];
-    const building = byMastery.find(
-      (c) => c.state.mastery_probability >= 0.4 && c.state.mastery_probability < 0.8,
-    ) ?? byMastery[Math.floor(byMastery.length / 2)];
+    const building =
+      byMastery.find(
+        (c) => c.state.mastery_probability >= 0.4 && c.state.mastery_probability < 0.8,
+      ) ?? byMastery[Math.floor(byMastery.length / 2)];
     const fading = atRisk[0]?.c ?? byMastery[byMastery.length - 1];
     switch (tour.step) {
       case 0:
@@ -186,7 +197,11 @@ function Dashboard() {
         return { nodeId: null, lane: lanes[tour.cycle % 4], cta: false };
       }
       case 4:
-        return { nodeId: nextTopic ? (data.concepts.find((c) => c.id === nextTopic.id)?.id ?? null) : null, lane: null, cta: true };
+        return {
+          nodeId: nextTopic ? (data.concepts.find((c) => c.id === nextTopic.id)?.id ?? null) : null,
+          lane: null,
+          cta: true,
+        };
       default:
         return { nodeId: null, lane: null, cta: false };
     }
@@ -215,6 +230,9 @@ function Dashboard() {
             <Link to="/course" className="inline-flex items-center gap-1.5 hover:text-primary">
               <BookOpen className="h-3.5 w-3.5" /> Course
             </Link>
+            <Link to="/planner" className="inline-flex items-center gap-1.5 hover:text-primary">
+              <GraduationCap className="h-3.5 w-3.5" /> Planner
+            </Link>
             <Link to="/review" className="inline-flex items-center gap-1.5 hover:text-primary">
               <Flame className="h-3.5 w-3.5" /> Review
               {review && review.due.length > 0 && (
@@ -228,6 +246,12 @@ function Dashboard() {
             </Link>
             <Link to="/timeline" className="inline-flex items-center gap-1.5 hover:text-primary">
               <History className="h-3.5 w-3.5" /> Timeline
+            </Link>
+            <Link to="/report" className="inline-flex items-center gap-1.5 hover:text-primary">
+              <BarChart3 className="h-3.5 w-3.5" /> Report
+            </Link>
+            <Link to="/engine" className="inline-flex items-center gap-1.5 hover:text-primary">
+              <Cpu className="h-3.5 w-3.5" /> Engine
             </Link>
             <AccountMenu fallbackName={data.student.name} />
           </nav>
@@ -252,7 +276,9 @@ function Dashboard() {
           {/* RIGHT — briefing, plan */}
           <section className="flex flex-col gap-4 lg:h-[calc(100vh-6.5rem)] lg:overflow-y-auto lg:pr-1">
             <div>
-              <div className="ink-caps text-muted-foreground">Daily Synapse{today ? ` · ${today}` : ""}</div>
+              <div className="ink-caps text-muted-foreground">
+                Daily Synapse{today ? ` · ${today}` : ""}
+              </div>
               <h1 className="mt-1.5 font-serif text-3xl font-bold leading-tight sm:text-4xl">
                 Good {greet}, {data.student.name.split(" ")[0]}.
               </h1>
@@ -270,10 +296,13 @@ function Dashboard() {
                 <span className="ink-caps text-primary">Twin Briefing</span>
               </div>
               <p className="mt-3 text-sm italic leading-relaxed text-foreground">
-                “{briefingQ.isLoading
+                “
+                {briefingQ.isLoading
                   ? "Reading your memory twin…"
-                  : (briefingQ.data?.briefing ?? data.student.daily_briefing ??
-                    "Let's build your first study session.")}”
+                  : (briefingQ.data?.briefing ??
+                    data.student.daily_briefing ??
+                    "Let's build your first study session.")}
+                ”
               </p>
               <div className="mt-4 flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -301,8 +330,8 @@ function Dashboard() {
                         : "Review queue clear"}
                     </div>
                     <div className="ink-caps mt-0.5 text-muted-foreground">
-                      {review.streak.current_streak}-day streak ·{" "}
-                      {review.streak.reviews_today} answered today
+                      {review.streak.current_streak}-day streak · {review.streak.reviews_today}{" "}
+                      answered today
                     </div>
                   </div>
                 </div>
@@ -316,17 +345,19 @@ function Dashboard() {
                 params={{ id: nextTopic.id }}
                 onClick={() => {
                   void logRecEvent({
-                      concept_id: nextTopic.id,
-                      kind: "click",
-                      lane: nextTopic.stage as "learn" | "practice" | "apply" | "review",
-                      explanation_mode: "characteristic",
-                      persuasive_type: null,
-                      profile_cluster: personality?.profile?.cluster ?? null,
-                    }).catch(() => {});
+                    concept_id: nextTopic.id,
+                    kind: "click",
+                    lane: nextTopic.stage as "learn" | "practice" | "apply" | "review",
+                    explanation_mode: "characteristic",
+                    persuasive_type: null,
+                    profile_cluster: personality?.profile?.cluster ?? null,
+                  }).catch(() => {});
                 }}
                 className={
                   "group relative flex items-center justify-between overflow-hidden border border-border bg-primary px-5 py-4 text-primary-foreground transition hover:bg-foreground " +
-                  (ctaHighlight ? "ring-4 ring-primary/30 ring-offset-2 ring-offset-secondary animate-pulse" : "")
+                  (ctaHighlight
+                    ? "ring-4 ring-primary/30 ring-offset-2 ring-offset-secondary animate-pulse"
+                    : "")
                 }
               >
                 <div className="relative z-10">
@@ -348,7 +379,9 @@ function Dashboard() {
               <div>
                 <div className="mb-2 flex items-baseline justify-between">
                   <span className="ink-caps text-muted-foreground">Fading fastest</span>
-                  <span className="text-[10px] text-muted-foreground">hover to locate on brain</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    hover to locate on brain
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {atRisk.map(({ c, R }) => (
@@ -366,7 +399,12 @@ function Dashboard() {
                       }
                     >
                       <span className="truncate font-medium">{c.name}</span>
-                      <span className={"ml-2 shrink-0 font-mono " + (R < 0.5 ? "text-destructive" : "text-muted-foreground")}>
+                      <span
+                        className={
+                          "ml-2 shrink-0 font-mono " +
+                          (R < 0.5 ? "text-destructive" : "text-muted-foreground")
+                        }
+                      >
                         {Math.round(R * 100)}%
                       </span>
                     </Link>
@@ -386,25 +424,32 @@ function Dashboard() {
             <div className="border border-border bg-card">
               <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
                 <span className="ink-caps text-muted-foreground">Course</span>
-                <Link to="/course" className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-widest text-primary hover:underline">
+                <Link
+                  to="/course"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-widest text-primary hover:underline"
+                >
                   Open <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
               <div className="divide-y divide-border">
-                {subjects.flatMap((s) => s.chapters).map((ch) => (
-                  <div key={ch.id} className="px-4 py-3">
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-serif text-sm font-semibold">{ch.name}</span>
-                      <span className="font-mono text-[10px] text-muted-foreground">{Math.round(ch.progress * 100)}%</span>
+                {subjects
+                  .flatMap((s) => s.chapters)
+                  .map((ch) => (
+                    <div key={ch.id} className="px-4 py-3">
+                      <div className="flex items-baseline justify-between">
+                        <span className="font-serif text-sm font-semibold">{ch.name}</span>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {Math.round(ch.progress * 100)}%
+                        </span>
+                      </div>
+                      <div className="mt-1.5 h-[3px] w-full overflow-hidden bg-muted">
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${Math.max(2, ch.progress * 100)}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="mt-1.5 h-[3px] w-full overflow-hidden bg-muted">
-                      <div
-                        className="h-full bg-primary"
-                        style={{ width: `${Math.max(2, ch.progress * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
 
@@ -422,5 +467,3 @@ function Dashboard() {
     </div>
   );
 }
-
-

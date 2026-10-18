@@ -9,58 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TimelineRouteImport } from './routes/timeline'
-import { Route as ReviewRouteImport } from './routes/review'
-import { Route as QuizRouteImport } from './routes/quiz'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as PlacementRouteImport } from './routes/placement'
-import { Route as HistoryRouteImport } from './routes/history'
-import { Route as CourseRouteImport } from './routes/course'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TopicIdRouteImport } from './routes/topic.$id'
-import { Route as ConceptIdRouteImport } from './routes/concept.$id'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CourseRouteImport } from './routes/course'
+import { Route as EngineRouteImport } from './routes/engine'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as PlacementRouteImport } from './routes/placement'
+import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as QuizRouteImport } from './routes/quiz'
+import { Route as ReportRouteImport } from './routes/report'
+import { Route as ReviewRouteImport } from './routes/review'
+import { Route as TimelineRouteImport } from './routes/timeline'
 import { Route as ApiRecEventRouteImport } from './routes/api/rec-event'
+import { Route as ConceptIdRouteImport } from './routes/concept.$id'
+import { Route as TopicIdRouteImport } from './routes/topic.$id'
 
-const TimelineRoute = TimelineRouteImport.update({
-  id: '/timeline',
-  path: '/timeline',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReviewRoute = ReviewRouteImport.update({
-  id: '/review',
-  path: '/review',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuizRoute = QuizRouteImport.update({
-  id: '/quiz',
-  path: '/quiz',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlacementRoute = PlacementRouteImport.update({
-  id: '/placement',
-  path: '/placement',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HistoryRoute = HistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CourseRoute = CourseRouteImport.update({
-  id: '/course',
-  path: '/course',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -68,14 +36,64 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TopicIdRoute = TopicIdRouteImport.update({
-  id: '/topic/$id',
-  path: '/topic/$id',
+const CourseRoute = CourseRouteImport.update({
+  id: '/course',
+  path: '/course',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EngineRoute = EngineRouteImport.update({
+  id: '/engine',
+  path: '/engine',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacementRoute = PlacementRouteImport.update({
+  id: '/placement',
+  path: '/placement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlannerRoute = PlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizRoute = QuizRouteImport.update({
+  id: '/quiz',
+  path: '/quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportRoute = ReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewRoute = ReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TimelineRoute = TimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRecEventRoute = ApiRecEventRouteImport.update({
+  id: '/api/rec-event',
+  path: '/api/rec-event',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConceptIdRoute = ConceptIdRouteImport.update({
@@ -83,9 +101,9 @@ const ConceptIdRoute = ConceptIdRouteImport.update({
   path: '/concept/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiRecEventRoute = ApiRecEventRouteImport.update({
-  id: '/api/rec-event',
-  path: '/api/rec-event',
+const TopicIdRoute = TopicIdRouteImport.update({
+  id: '/topic/$id',
+  path: '/topic/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -94,10 +112,13 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/course': typeof CourseRoute
+  '/engine': typeof EngineRoute
   '/history': typeof HistoryRoute
   '/placement': typeof PlacementRoute
+  '/planner': typeof PlannerRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
+  '/report': typeof ReportRoute
   '/review': typeof ReviewRoute
   '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
@@ -109,10 +130,13 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/course': typeof CourseRoute
+  '/engine': typeof EngineRoute
   '/history': typeof HistoryRoute
   '/placement': typeof PlacementRoute
+  '/planner': typeof PlannerRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
+  '/report': typeof ReportRoute
   '/review': typeof ReviewRoute
   '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
@@ -125,10 +149,13 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/course': typeof CourseRoute
+  '/engine': typeof EngineRoute
   '/history': typeof HistoryRoute
   '/placement': typeof PlacementRoute
+  '/planner': typeof PlannerRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
+  '/report': typeof ReportRoute
   '/review': typeof ReviewRoute
   '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
@@ -142,10 +169,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/course'
+    | '/engine'
     | '/history'
     | '/placement'
+    | '/planner'
     | '/profile'
     | '/quiz'
+    | '/report'
     | '/review'
     | '/timeline'
     | '/api/rec-event'
@@ -157,10 +187,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/course'
+    | '/engine'
     | '/history'
     | '/placement'
+    | '/planner'
     | '/profile'
     | '/quiz'
+    | '/report'
     | '/review'
     | '/timeline'
     | '/api/rec-event'
@@ -172,10 +205,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/course'
+    | '/engine'
     | '/history'
     | '/placement'
+    | '/planner'
     | '/profile'
     | '/quiz'
+    | '/report'
     | '/review'
     | '/timeline'
     | '/api/rec-event'
@@ -188,10 +224,13 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   CourseRoute: typeof CourseRoute
+  EngineRoute: typeof EngineRoute
   HistoryRoute: typeof HistoryRoute
   PlacementRoute: typeof PlacementRoute
+  PlannerRoute: typeof PlannerRoute
   ProfileRoute: typeof ProfileRoute
   QuizRoute: typeof QuizRoute
+  ReportRoute: typeof ReportRoute
   ReviewRoute: typeof ReviewRoute
   TimelineRoute: typeof TimelineRoute
   ApiRecEventRoute: typeof ApiRecEventRoute
@@ -201,60 +240,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/timeline': {
-      id: '/timeline'
-      path: '/timeline'
-      fullPath: '/timeline'
-      preLoaderRoute: typeof TimelineRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/review': {
-      id: '/review'
-      path: '/review'
-      fullPath: '/review'
-      preLoaderRoute: typeof ReviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quiz': {
-      id: '/quiz'
-      path: '/quiz'
-      fullPath: '/quiz'
-      preLoaderRoute: typeof QuizRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/placement': {
-      id: '/placement'
-      path: '/placement'
-      fullPath: '/placement'
-      preLoaderRoute: typeof PlacementRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/history': {
-      id: '/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof HistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/course': {
-      id: '/course'
-      path: '/course'
-      fullPath: '/course'
-      preLoaderRoute: typeof CourseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -264,18 +254,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/topic/$id': {
-      id: '/topic/$id'
-      path: '/topic/$id'
-      fullPath: '/topic/$id'
-      preLoaderRoute: typeof TopicIdRouteImport
+    '/course': {
+      id: '/course'
+      path: '/course'
+      fullPath: '/course'
+      preLoaderRoute: typeof CourseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/engine': {
+      id: '/engine'
+      path: '/engine'
+      fullPath: '/engine'
+      preLoaderRoute: typeof EngineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/placement': {
+      id: '/placement'
+      path: '/placement'
+      fullPath: '/placement'
+      preLoaderRoute: typeof PlacementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planner': {
+      id: '/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz': {
+      id: '/quiz'
+      path: '/quiz'
+      fullPath: '/quiz'
+      preLoaderRoute: typeof QuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/report': {
+      id: '/report'
+      path: '/report'
+      fullPath: '/report'
+      preLoaderRoute: typeof ReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review': {
+      id: '/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof ReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/timeline': {
+      id: '/timeline'
+      path: '/timeline'
+      fullPath: '/timeline'
+      preLoaderRoute: typeof TimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/rec-event': {
+      id: '/api/rec-event'
+      path: '/api/rec-event'
+      fullPath: '/api/rec-event'
+      preLoaderRoute: typeof ApiRecEventRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/concept/$id': {
@@ -285,11 +345,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConceptIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/rec-event': {
-      id: '/api/rec-event'
-      path: '/api/rec-event'
-      fullPath: '/api/rec-event'
-      preLoaderRoute: typeof ApiRecEventRouteImport
+    '/topic/$id': {
+      id: '/topic/$id'
+      path: '/topic/$id'
+      fullPath: '/topic/$id'
+      preLoaderRoute: typeof TopicIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -300,10 +360,13 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CourseRoute: CourseRoute,
+  EngineRoute: EngineRoute,
   HistoryRoute: HistoryRoute,
   PlacementRoute: PlacementRoute,
+  PlannerRoute: PlannerRoute,
   ProfileRoute: ProfileRoute,
   QuizRoute: QuizRoute,
+  ReportRoute: ReportRoute,
   ReviewRoute: ReviewRoute,
   TimelineRoute: TimelineRoute,
   ApiRecEventRoute: ApiRecEventRoute,
@@ -313,3 +376,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
