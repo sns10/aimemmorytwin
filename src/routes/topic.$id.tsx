@@ -18,6 +18,7 @@ import {
   Trophy,
   Award,
   Save,
+  Gamepad2,
 } from "lucide-react";
 import {
   getTopicWorkspace,
@@ -25,10 +26,7 @@ import {
   submitAssignment,
   type TopicWorkspace,
 } from "@/lib/course.functions";
-import {
-  submitEvent,
-  explainMisconception,
-} from "@/lib/memorytwin.functions";
+import { submitEvent, explainMisconception } from "@/lib/memorytwin.functions";
 import { StageBadge } from "@/components/StageBadge";
 import { stageBlurb } from "@/lib/stage";
 import { difficultyFitLabel, pickQuestionIndex } from "@/lib/adaptive";
@@ -43,8 +41,7 @@ const workspaceQuery = (id: string) =>
 
 export const Route = createFileRoute("/topic/$id")({
   ssr: false,
-  loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(workspaceQuery(params.id)),
+  loader: ({ context, params }) => context.queryClient.ensureQueryData(workspaceQuery(params.id)),
   component: TopicPage,
   errorComponent: ({ error }: { error: Error }) => (
     <div className="p-10 text-sm text-destructive">Topic failed: {error.message}</div>
@@ -81,12 +78,24 @@ function TopicPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/60">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link to="/course" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            to="/course"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
             <ArrowLeft className="h-4 w-4" /> Course
           </Link>
-          <div className="flex items-center gap-2">
-            <Brain className="h-4 w-4 text-primary" />
-            <span className="font-serif text-sm font-semibold">Topic</span>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/play/$id"
+              params={{ id }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs hover:bg-primary/20"
+            >
+              <Gamepad2 className="h-3.5 w-3.5" /> Practice arcade
+            </Link>
+            <div className="flex items-center gap-2">
+              <Brain className="h-4 w-4 text-primary" />
+              <span className="font-serif text-sm font-semibold">Topic</span>
+            </div>
           </div>
         </div>
       </header>
@@ -112,17 +121,14 @@ function TopicPage() {
           <StatCard label="Memory stability" value={`${ws.state.stability.toFixed(1)} d`} />
           <StatCard
             label="Best assignment"
-            value={
-              ws.submissions[0]
-                ? `${Math.round(ws.submissions[0].ai_score * 100)}%`
-                : "—"
-            }
+            value={ws.submissions[0] ? `${Math.round(ws.submissions[0].ai_score * 100)}%` : "—"}
           />
         </div>
         <p className="mt-3 text-xs text-muted-foreground">{stageBlurb(ws.stage)}</p>
         {ws.topic.prerequisite_name && (
           <p className="mt-1 text-xs text-muted-foreground">
-            Builds on <span className="font-medium text-foreground">{ws.topic.prerequisite_name}</span>.
+            Builds on{" "}
+            <span className="font-medium text-foreground">{ws.topic.prerequisite_name}</span>.
           </p>
         )}
         {ws.topic.concept_tags.length > 0 && (
@@ -170,15 +176,17 @@ function TopicPage() {
               {tab === "practice" && (
                 <PracticePanel ws={ws} topicId={id} onDone={() => setTab("apply")} />
               )}
-              {tab === "apply" && <ApplyPanel ws={ws} topicId={id} onDone={() => navigate({ to: "/" })} />}
+              {tab === "apply" && (
+                <ApplyPanel ws={ws} topicId={id} onDone={() => navigate({ to: "/" })} />
+              )}
             </div>
           </>
         )}
 
         <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
           <Save className="h-3.5 w-3.5" />
-          You can leave any time — each lane saves independently, so you don't
-          have to finish Learn, Practice, and Apply in one go.
+          You can leave any time — each lane saves independently, so you don't have to finish Learn,
+          Practice, and Apply in one go.
         </p>
 
         <div className="mt-10 border-t border-border pt-6">
@@ -331,8 +339,7 @@ function LearnPanel({
           <span className="font-serif text-lg font-semibold">Lesson complete</span>
         </div>
         <p className="mt-2 text-sm text-foreground">
-          Awareness built. The next step is to drill a few questions so the idea
-          sticks.
+          Awareness built. The next step is to drill a few questions so the idea sticks.
         </p>
         <button
           onClick={onDone}
@@ -436,10 +443,7 @@ function PracticePanel({
   }, [topicId]);
   useEffect(() => {
     try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({ qIdx, served, answered, correctCount }),
-      );
+      localStorage.setItem(storageKey, JSON.stringify({ qIdx, served, answered, correctCount }));
     } catch {}
   }, [storageKey, qIdx, served, answered, correctCount]);
 
@@ -529,7 +533,13 @@ function PracticePanel({
   };
 
   const difficultyLabel =
-    q.difficulty < 0.35 ? "Easy" : q.difficulty < 0.6 ? "Medium" : q.difficulty < 0.8 ? "Hard" : "Expert";
+    q.difficulty < 0.35
+      ? "Easy"
+      : q.difficulty < 0.6
+        ? "Medium"
+        : q.difficulty < 0.8
+          ? "Hard"
+          : "Expert";
   const difficultyClass =
     q.difficulty < 0.35
       ? "bg-emerald-100 text-emerald-800"
@@ -548,7 +558,8 @@ function PracticePanel({
             <span className="font-serif text-lg font-semibold">Practice goal reached</span>
           </div>
           <p className="mt-2 text-sm text-foreground">
-            Mastery is now {Math.round((sessionMastery ?? ws.state.mastery) * 100)}%. Ready to prove you can apply this in the assignment?
+            Mastery is now {Math.round((sessionMastery ?? ws.state.mastery) * 100)}%. Ready to prove
+            you can apply this in the assignment?
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button
@@ -559,7 +570,9 @@ function PracticePanel({
             </button>
             <button
               onClick={() => {
-                try { localStorage.removeItem(storageKey); } catch {}
+                try {
+                  localStorage.removeItem(storageKey);
+                } catch {}
               }}
               className="rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium hover:bg-muted"
             >
@@ -727,7 +740,8 @@ function ApplyPanel({
             <span className="font-serif text-lg font-semibold">Topic mastered</span>
           </div>
           <p className="mt-2 text-sm text-foreground">
-            Strong work — this concept is now in your long-term memory model. We'll schedule reviews automatically.
+            Strong work — this concept is now in your long-term memory model. We'll schedule reviews
+            automatically.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button
@@ -811,9 +825,7 @@ function ApplyPanel({
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm">{s.response}</p>
                 {s.ai_feedback && (
-                  <p className="mt-2 text-xs italic text-muted-foreground">
-                    {s.ai_feedback}
-                  </p>
+                  <p className="mt-2 text-xs italic text-muted-foreground">{s.ai_feedback}</p>
                 )}
               </li>
             ))}
@@ -845,7 +857,7 @@ function MasteredPanel({
           <span className="font-serif text-2xl font-semibold">Topic mastered</span>
         </div>
         <p className="mt-2 text-sm text-foreground">
-          This concept is in your long-term memory model. Current predicted recall: {" "}
+          This concept is in your long-term memory model. Current predicted recall:{" "}
           <span className="font-semibold">{Math.round(R * 100)}%</span> with a stability of{" "}
           {ws.state.stability.toFixed(1)} days.
         </p>
@@ -870,17 +882,19 @@ function MasteredPanel({
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-border bg-background p-4">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Mastery</p>
-            <p className="mt-1 font-serif text-2xl font-semibold">{Math.round(ws.state.mastery * 100)}%</p>
+            <p className="mt-1 font-serif text-2xl font-semibold">
+              {Math.round(ws.state.mastery * 100)}%
+            </p>
           </div>
           <div className="rounded-xl border border-border bg-background p-4">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Stability</p>
-            <p className="mt-1 font-serif text-2xl font-semibold">{ws.state.stability.toFixed(1)}d</p>
+            <p className="mt-1 font-serif text-2xl font-semibold">
+              {ws.state.stability.toFixed(1)}d
+            </p>
           </div>
           <div className="rounded-xl border border-border bg-background p-4">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Last review</p>
-            <p className="mt-1 text-sm">
-              {last ? last.toLocaleDateString() : "Not reviewed yet"}
-            </p>
+            <p className="mt-1 text-sm">{last ? last.toLocaleDateString() : "Not reviewed yet"}</p>
           </div>
         </div>
       </div>

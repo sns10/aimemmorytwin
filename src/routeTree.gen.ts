@@ -24,6 +24,7 @@ import { Route as ReviewRouteImport } from './routes/review'
 import { Route as TimelineRouteImport } from './routes/timeline'
 import { Route as ApiRecEventRouteImport } from './routes/api/rec-event'
 import { Route as ConceptIdRouteImport } from './routes/concept.$id'
+import { Route as PlayIdRouteImport } from './routes/play.$id'
 import { Route as TopicIdRouteImport } from './routes/topic.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -101,6 +102,11 @@ const ConceptIdRoute = ConceptIdRouteImport.update({
   path: '/concept/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlayIdRoute = PlayIdRouteImport.update({
+  id: '/play/$id',
+  path: '/play/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TopicIdRoute = TopicIdRouteImport.update({
   id: '/topic/$id',
   path: '/topic/$id',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
   '/concept/$id': typeof ConceptIdRoute
+  '/play/$id': typeof PlayIdRoute
   '/topic/$id': typeof TopicIdRoute
 }
 export interface FileRoutesByTo {
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
   '/concept/$id': typeof ConceptIdRoute
+  '/play/$id': typeof PlayIdRoute
   '/topic/$id': typeof TopicIdRoute
 }
 export interface FileRoutesById {
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
   '/concept/$id': typeof ConceptIdRoute
+  '/play/$id': typeof PlayIdRoute
   '/topic/$id': typeof TopicIdRoute
 }
 export interface FileRouteTypes {
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/timeline'
     | '/api/rec-event'
     | '/concept/$id'
+    | '/play/$id'
     | '/topic/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/timeline'
     | '/api/rec-event'
     | '/concept/$id'
+    | '/play/$id'
     | '/topic/$id'
   id:
     | '__root__'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/timeline'
     | '/api/rec-event'
     | '/concept/$id'
+    | '/play/$id'
     | '/topic/$id'
   fileRoutesById: FileRoutesById
 }
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   TimelineRoute: typeof TimelineRoute
   ApiRecEventRoute: typeof ApiRecEventRoute
   ConceptIdRoute: typeof ConceptIdRoute
+  PlayIdRoute: typeof PlayIdRoute
   TopicIdRoute: typeof TopicIdRoute
 }
 
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConceptIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/play/$id': {
+      id: '/play/$id'
+      path: '/play/$id'
+      fullPath: '/play/$id'
+      preLoaderRoute: typeof PlayIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/topic/$id': {
       id: '/topic/$id'
       path: '/topic/$id'
@@ -371,6 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   TimelineRoute: TimelineRoute,
   ApiRecEventRoute: ApiRecEventRoute,
   ConceptIdRoute: ConceptIdRoute,
+  PlayIdRoute: PlayIdRoute,
   TopicIdRoute: TopicIdRoute,
 }
 export const routeTree = rootRouteImport
