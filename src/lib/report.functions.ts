@@ -172,7 +172,12 @@ export const getReportCard = createServerFn({ method: "GET" }).handler(
         const st = states.get(t.id);
         masterySum += st?.mastery ?? 0;
         if (stage === "master") mastered += 1;
-        if (stage === "review") fading += 1;
+        if (
+          st?.lastReviewedAt != null &&
+          (viewed.has(t.id) || perConceptAnswers.has(t.id)) &&
+          (recallOf.get(t.id) ?? 1) < 0.8
+        )
+          fading += 1;
         if (!viewed.has(t.id) && !perConceptAnswers.has(t.id)) notStarted += 1;
         const a = perConceptAnswers.get(t.id);
         if (a) {
@@ -257,7 +262,16 @@ export const getReportCard = createServerFn({ method: "GET" }).handler(
 
     const started = concepts.filter((c) => viewed.has(c.id) || perConceptAnswers.has(c.id));
     const mastered = concepts.filter((c) => stageOf.get(c.id) === "master").length;
-    const fading = concepts.filter((c) => stageOf.get(c.id) === "review").length;
+    // "Fading" means predicted recall has dropped below the review threshold on
+    // a topic the student has actually started — the same rule the "slipping
+    // fastest" list and the dashboard use. Counting only the "review" stage
+    // missed topics that are fading but have no assignment score yet.
+    const fading = concepts.filter(
+      (c) =>
+        (viewed.has(c.id) || perConceptAnswers.has(c.id)) &&
+        states.get(c.id)?.lastReviewedAt != null &&
+        (recallOf.get(c.id) ?? 1) < 0.8,
+    ).length;
 
     // Readiness: how much of the course would survive to an exam taken today —
     // mastery weighted by predicted recall, averaged over every topic.
