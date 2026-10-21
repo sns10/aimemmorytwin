@@ -437,6 +437,41 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_activities: {
+        Row: {
+          concept_id: string
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          sort_order: number
+        }
+        Insert: {
+          concept_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          payload: Json
+          sort_order?: number
+        }
+        Update: {
+          concept_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_activities_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questions: {
         Row: {
           concept_id: string
