@@ -14,6 +14,7 @@ import {
   GraduationCap,
   BarChart3,
   Cpu,
+  Users,
 } from "lucide-react";
 import { getStudentOverview, generateDailyBriefing } from "@/lib/memorytwin.functions";
 import { getCourseTree } from "@/lib/course.functions";
@@ -252,6 +253,9 @@ function Dashboard() {
             </Link>
             <Link to="/engine" className="inline-flex items-center gap-1.5 hover:text-primary">
               <Cpu className="h-3.5 w-3.5" /> Engine
+            </Link>
+            <Link to="/classes" className="inline-flex items-center gap-1.5 hover:text-primary">
+              <Users className="h-3.5 w-3.5" /> Classes
             </Link>
             <AccountMenu fallbackName={data.student.name} />
           </nav>

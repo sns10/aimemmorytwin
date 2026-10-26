@@ -1,776 +1,837 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
+    PostgrestVersion: "14.5";
+  };
   public: {
     Tables: {
       assignment_submissions: {
         Row: {
-          ai_feedback: string | null
-          ai_score: number
-          assignment_id: string
-          concept_id: string
-          created_at: string
-          id: string
-          response: string
-          student_id: string
-        }
+          ai_feedback: string | null;
+          ai_score: number;
+          assignment_id: string;
+          concept_id: string;
+          created_at: string;
+          id: string;
+          response: string;
+          student_id: string;
+        };
         Insert: {
-          ai_feedback?: string | null
-          ai_score?: number
-          assignment_id: string
-          concept_id: string
-          created_at?: string
-          id?: string
-          response: string
-          student_id: string
-        }
+          ai_feedback?: string | null;
+          ai_score?: number;
+          assignment_id: string;
+          concept_id: string;
+          created_at?: string;
+          id?: string;
+          response: string;
+          student_id: string;
+        };
         Update: {
-          ai_feedback?: string | null
-          ai_score?: number
-          assignment_id?: string
-          concept_id?: string
-          created_at?: string
-          id?: string
-          response?: string
-          student_id?: string
-        }
+          ai_feedback?: string | null;
+          ai_score?: number;
+          assignment_id?: string;
+          concept_id?: string;
+          created_at?: string;
+          id?: string;
+          response?: string;
+          student_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "assignment_submissions_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "assignments"
-            referencedColumns: ["id"]
+            foreignKeyName: "assignment_submissions_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "assignment_submissions_concept_id_fkey"
-            columns: ["concept_id"]
-            isOneToOne: false
-            referencedRelation: "concepts"
-            referencedColumns: ["id"]
+            foreignKeyName: "assignment_submissions_concept_id_fkey";
+            columns: ["concept_id"];
+            isOneToOne: false;
+            referencedRelation: "concepts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       assignments: {
         Row: {
-          concept_id: string
-          created_at: string
-          difficulty: number
-          id: string
-          prompt: string
-          rubric: string
-          title: string
-        }
+          concept_id: string;
+          created_at: string;
+          difficulty: number;
+          id: string;
+          prompt: string;
+          rubric: string;
+          title: string;
+        };
         Insert: {
-          concept_id: string
-          created_at?: string
-          difficulty?: number
-          id?: string
-          prompt: string
-          rubric: string
-          title: string
-        }
+          concept_id: string;
+          created_at?: string;
+          difficulty?: number;
+          id?: string;
+          prompt: string;
+          rubric: string;
+          title: string;
+        };
         Update: {
-          concept_id?: string
-          created_at?: string
-          difficulty?: number
-          id?: string
-          prompt?: string
-          rubric?: string
-          title?: string
-        }
+          concept_id?: string;
+          created_at?: string;
+          difficulty?: number;
+          id?: string;
+          prompt?: string;
+          rubric?: string;
+          title?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "assignments_concept_id_fkey"
-            columns: ["concept_id"]
-            isOneToOne: false
-            referencedRelation: "concepts"
-            referencedColumns: ["id"]
+            foreignKeyName: "assignments_concept_id_fkey";
+            columns: ["concept_id"];
+            isOneToOne: false;
+            referencedRelation: "concepts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       chapters: {
         Row: {
-          created_at: string
-          id: string
-          name: string
-          sort_order: number
-          subject_id: string
-          summary: string | null
-        }
+          created_at: string;
+          id: string;
+          name: string;
+          sort_order: number;
+          subject_id: string;
+          summary: string | null;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          sort_order?: number
-          subject_id: string
-          summary?: string | null
-        }
+          created_at?: string;
+          id?: string;
+          name: string;
+          sort_order?: number;
+          subject_id: string;
+          summary?: string | null;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          sort_order?: number
-          subject_id?: string
-          summary?: string | null
-        }
+          created_at?: string;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          subject_id?: string;
+          summary?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "chapters_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            foreignKeyName: "chapters_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "subjects";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       cohort_topic_stats: {
         Row: {
-          cohort_size: number
-          concept_id: string
-          peers_completed: number
-          top_achievers_completed: number
-          updated_at: string
-        }
+          cohort_size: number;
+          concept_id: string;
+          peers_completed: number;
+          top_achievers_completed: number;
+          updated_at: string;
+        };
         Insert: {
-          cohort_size?: number
-          concept_id: string
-          peers_completed?: number
-          top_achievers_completed?: number
-          updated_at?: string
-        }
+          cohort_size?: number;
+          concept_id: string;
+          peers_completed?: number;
+          top_achievers_completed?: number;
+          updated_at?: string;
+        };
         Update: {
-          cohort_size?: number
-          concept_id?: string
-          peers_completed?: number
-          top_achievers_completed?: number
-          updated_at?: string
-        }
+          cohort_size?: number;
+          concept_id?: string;
+          peers_completed?: number;
+          top_achievers_completed?: number;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "cohort_topic_stats_concept_id_fkey"
-            columns: ["concept_id"]
-            isOneToOne: true
-            referencedRelation: "concepts"
-            referencedColumns: ["id"]
+            foreignKeyName: "cohort_topic_stats_concept_id_fkey";
+            columns: ["concept_id"];
+            isOneToOne: true;
+            referencedRelation: "concepts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       concepts: {
         Row: {
-          chapter_id: string | null
-          concept_tags: string[]
-          correct_index: number
-          created_at: string
-          difficulty: number
-          id: string
-          learning_objectives: string | null
-          name: string
-          options: Json
-          p_guess: number
-          p_init: number
-          p_learn: number
-          p_slip: number
-          prerequisite_id: string | null
-          question: string
-          sort_order: number
-          subject: string
-          video_url: string | null
-        }
+          chapter_id: string | null;
+          concept_tags: string[];
+          correct_index: number;
+          created_at: string;
+          difficulty: number;
+          id: string;
+          learning_objectives: string | null;
+          name: string;
+          options: Json;
+          p_guess: number;
+          p_init: number;
+          p_learn: number;
+          p_slip: number;
+          prerequisite_id: string | null;
+          question: string;
+          sort_order: number;
+          subject: string;
+          video_url: string | null;
+        };
         Insert: {
-          chapter_id?: string | null
-          concept_tags?: string[]
-          correct_index: number
-          created_at?: string
-          difficulty?: number
-          id?: string
-          learning_objectives?: string | null
-          name: string
-          options: Json
-          p_guess?: number
-          p_init?: number
-          p_learn?: number
-          p_slip?: number
-          prerequisite_id?: string | null
-          question: string
-          sort_order?: number
-          subject?: string
-          video_url?: string | null
-        }
+          chapter_id?: string | null;
+          concept_tags?: string[];
+          correct_index: number;
+          created_at?: string;
+          difficulty?: number;
+          id?: string;
+          learning_objectives?: string | null;
+          name: string;
+          options: Json;
+          p_guess?: number;
+          p_init?: number;
+          p_learn?: number;
+          p_slip?: number;
+          prerequisite_id?: string | null;
+          question: string;
+          sort_order?: number;
+          subject?: string;
+          video_url?: string | null;
+        };
         Update: {
-          chapter_id?: string | null
-          concept_tags?: string[]
-          correct_index?: number
-          created_at?: string
-          difficulty?: number
-          id?: string
-          learning_objectives?: string | null
-          name?: string
-          options?: Json
-          p_guess?: number
-          p_init?: number
-          p_learn?: number
-          p_slip?: number
-          prerequisite_id?: string | null
-          question?: string
-          sort_order?: number
-          subject?: string
-          video_url?: string | null
-        }
+          chapter_id?: string | null;
+          concept_tags?: string[];
+          correct_index?: number;
+          created_at?: string;
+          difficulty?: number;
+          id?: string;
+          learning_objectives?: string | null;
+          name?: string;
+          options?: Json;
+          p_guess?: number;
+          p_init?: number;
+          p_learn?: number;
+          p_slip?: number;
+          prerequisite_id?: string | null;
+          question?: string;
+          sort_order?: number;
+          subject?: string;
+          video_url?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "concepts_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapters"
-            referencedColumns: ["id"]
+            foreignKeyName: "concepts_chapter_id_fkey";
+            columns: ["chapter_id"];
+            isOneToOne: false;
+            referencedRelation: "chapters";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "concepts_prerequisite_id_fkey"
-            columns: ["prerequisite_id"]
-            isOneToOne: false
-            referencedRelation: "concepts"
-            referencedColumns: ["id"]
+            foreignKeyName: "concepts_prerequisite_id_fkey";
+            columns: ["prerequisite_id"];
+            isOneToOne: false;
+            referencedRelation: "concepts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       knowledge_states: {
         Row: {
-          concept_id: string
-          last_reviewed_at: string | null
-          mastery_probability: number
-          memory_stability: number
-          next_revision_at: string
-          student_id: string
-          updated_at: string
-        }
+          concept_id: string;
+          last_reviewed_at: string | null;
+          mastery_probability: number;
+          memory_stability: number;
+          next_revision_at: string;
+          student_id: string;
+          updated_at: string;
+        };
         Insert: {
-          concept_id: string
-          last_reviewed_at?: string | null
-          mastery_probability?: number
-          memory_stability?: number
-          next_revision_at?: string
-          student_id: string
-          updated_at?: string
-        }
+          concept_id: string;
+          last_reviewed_at?: string | null;
+          mastery_probability?: number;
+          memory_stability?: number;
+          next_revision_at?: string;
+          student_id: string;
+          updated_at?: string;
+        };
         Update: {
-          concept_id?: string
-          last_reviewed_at?: string | null
-          mastery_probability?: number
-          memory_stability?: number
-          next_revision_at?: string
-          student_id?: string
-          updated_at?: string
-        }
+          concept_id?: string;
+          last_reviewed_at?: string | null;
+          mastery_probability?: number;
+          memory_stability?: number;
+          next_revision_at?: string;
+          student_id?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "knowledge_states_concept_id_fkey"
-            columns: ["concept_id"]
-            isOneToOne: false
-            referencedRelation: "concepts"
-            referencedColumns: ["id"]
+            foreignKeyName: "knowledge_states_concept_id_fkey";
+            columns: ["concept_id"];
+            isOneToOne: false;
+            referencedRelation: "concepts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "knowledge_states_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            foreignKeyName: "knowledge_states_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       learning_events: {
         Row: {
-          concept_id: string
-          created_at: string
-          difficulty: number
-          event_kind: string
-          id: string
-          is_correct: boolean
-          post_mastery: number | null
-          pre_mastery: number | null
-          question_id: string | null
-          response_time_ms: number
-          student_id: string
-        }
+          concept_id: string;
+          created_at: string;
+          difficulty: number;
+          event_kind: string;
+          id: string;
+          is_correct: boolean;
+          post_mastery: number | null;
+          pre_mastery: number | null;
+          question_id: string | null;
+          response_time_ms: number;
+          student_id: string;
+        };
         Insert: {
-          concept_id: string
-          created_at?: string
-          difficulty?: number
-          event_kind?: string
-          id?: string
-          is_correct: boolean
-          post_mastery?: number | null
-          pre_mastery?: number | null
-          question_id?: string | null
-          response_time_ms?: number
-          student_id: string
-        }
+          concept_id: string;
+          created_at?: string;
+          difficulty?: number;
+          event_kind?: string;
+          id?: string;
+          is_correct: boolean;
+          post_mastery?: number | null;
+          pre_mastery?: number | null;
+          question_id?: string | null;
+          response_time_ms?: number;
+          student_id: string;
+        };
         Update: {
-          concept_id?: string
-          created_at?: string
-          difficulty?: number
-          event_kind?: string
-          id?: string
-          is_correct?: boolean
-          post_mastery?: number | null
-          pre_mastery?: number | null
-          question_id?: string | null
-          response_time_ms?: number
-          student_id?: string
-        }
+          concept_id?: string;
+          created_at?: string;
+          difficulty?: number;
+          event_kind?: string;
+          id?: string;
+          is_correct?: boolean;
+          post_mastery?: number | null;
+          pre_mastery?: number | null;
+          question_id?: string | null;
+          response_time_ms?: number;
+          student_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "learning_events_concept_id_fkey"
-            columns: ["concept_id"]
-            isOneToOne: false
-            referencedRelation: "concepts"
-            referencedColumns: ["id"]
+            foreignKeyName: "learning_events_concept_id_fkey";
+            columns: ["concept_id"];
+            isOneToOne: false;
+            referencedRelation: "concepts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "learning_events_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "questions"
-            referencedColumns: ["id"]
+            foreignKeyName: "learning_events_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "learning_events_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            foreignKeyName: "learning_events_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       lesson_content: {
         Row: {
-          body: string | null
-          concept_id: string
-          created_at: string
-          duration_min: number
-          id: string
-          kind: string
-          sort_order: number
-          title: string
-          url: string | null
-        }
+          body: string | null;
+          concept_id: string;
+          created_at: string;
+          duration_min: number;
+          id: string;
+          kind: string;
+          sort_order: number;
+          title: string;
+          url: string | null;
+        };
         Insert: {
-          body?: string | null
-          concept_id: string
-          created_at?: string
-          duration_min?: number
-          id?: string
-          kind: string
-          sort_order?: number
-          title: string
-          url?: string | null
-        }
+          body?: string | null;
+          concept_id: string;
+          created_at?: string;
+          duration_min?: number;
+          id?: string;
+          kind: string;
+          sort_order?: number;
+          title: string;
+          url?: string | null;
+        };
         Update: {
-          body?: string | null
-          concept_id?: string
-          created_at?: string
-          duration_min?: number
-          id?: string
-          kind?: string
-          sort_order?: number
-          title?: string
-          url?: string | null
-        }
+          body?: string | null;
+          concept_id?: string;
+          created_at?: string;
+          duration_min?: number;
+          id?: string;
+          kind?: string;
+          sort_order?: number;
+          title?: string;
+          url?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "lesson_content_concept_id_fkey"
-            columns: ["concept_id"]
-            isOneToOne: false
-            referencedRelation: "concepts"
-            referencedColumns: ["id"]
+            foreignKeyName: "lesson_content_concept_id_fkey";
+            columns: ["concept_id"];
+            isOneToOne: false;
+            referencedRelation: "concepts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       personality_profiles: {
         Row: {
-          agreeableness: number
-          assessed_at: string
-          cluster: string
-          conscientiousness: number
-          extraversion: number
-          math_confidence: number
-          neuroticism: number
-          openness: number
-          student_id: string
-          tailored_enabled: boolean
-        }
+          agreeableness: number;
+          assessed_at: string;
+          cluster: string;
+          conscientiousness: number;
+          extraversion: number;
+          math_confidence: number;
+          neuroticism: number;
+          openness: number;
+          student_id: string;
+          tailored_enabled: boolean;
+        };
         Insert: {
-          agreeableness?: number
-          assessed_at?: string
-          cluster?: string
-          conscientiousness?: number
-          extraversion?: number
-          math_confidence?: number
-          neuroticism?: number
-          openness?: number
-          student_id: string
-          tailored_enabled?: boolean
-        }
+          agreeableness?: number;
+          assessed_at?: string;
+          cluster?: string;
+          conscientiousness?: number;
+          extraversion?: number;
+          math_confidence?: number;
+          neuroticism?: number;
+          openness?: number;
+          student_id: string;
+          tailored_enabled?: boolean;
+        };
         Update: {
-          agreeableness?: number
-          assessed_at?: string
-          cluster?: string
-          conscientiousness?: number
-          extraversion?: number
-          math_confidence?: number
-          neuroticism?: number
-          openness?: number
-          student_id?: string
-          tailored_enabled?: boolean
-        }
-        Relationships: []
-      }
+          agreeableness?: number;
+          assessed_at?: string;
+          cluster?: string;
+          conscientiousness?: number;
+          extraversion?: number;
+          math_confidence?: number;
+          neuroticism?: number;
+          openness?: number;
+          student_id?: string;
+          tailored_enabled?: boolean;
+        };
+        Relationships: [];
+      };
+      classes: {
+        Row: {
+          archived: boolean;
+          created_at: string;
+          id: string;
+          join_code: string;
+          name: string;
+          subject_id: string | null;
+          teacher_user_id: string;
+        };
+        Insert: {
+          archived?: boolean;
+          created_at?: string;
+          id?: string;
+          join_code: string;
+          name: string;
+          subject_id?: string | null;
+          teacher_user_id: string;
+        };
+        Update: {
+          archived?: boolean;
+          created_at?: string;
+          id?: string;
+          join_code?: string;
+          name?: string;
+          subject_id?: string | null;
+          teacher_user_id?: string;
+        };
+        Relationships: [];
+      };
+      class_members: {
+        Row: {
+          class_id: string;
+          joined_at: string;
+          student_id: string;
+        };
+        Insert: {
+          class_id: string;
+          joined_at?: string;
+          student_id: string;
+        };
+        Update: {
+          class_id?: string;
+          joined_at?: string;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_members_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_members_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       topic_activities: {
         Row: {
-          concept_id: string
-          created_at: string
-          id: string
-          kind: string
-          payload: Json
-          sort_order: number
-        }
+          concept_id: string;
+          created_at: string;
+          id: string;
+          kind: string;
+          payload: Json;
+          sort_order: number;
+        };
         Insert: {
-          concept_id: string
-          created_at?: string
-          id?: string
-          kind: string
-          payload: Json
-          sort_order?: number
-        }
+          concept_id: string;
+          created_at?: string;
+          id?: string;
+          kind: string;
+          payload: Json;
+          sort_order?: number;
+        };
         Update: {
-          concept_id?: string
-          created_at?: string
-          id?: string
-          kind?: string
-          payload?: Json
-          sort_order?: number
-        }
+          concept_id?: string;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          payload?: Json;
+          sort_order?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "topic_activities_concept_id_fkey"
-            columns: ["concept_id"]
-            isOneToOne: false
-            referencedRelation: "concepts"
-            referencedColumns: ["id"]
+            foreignKeyName: "topic_activities_concept_id_fkey";
+            columns: ["concept_id"];
+            isOneToOne: false;
+            referencedRelation: "concepts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       questions: {
         Row: {
-          concept_id: string
-          correct_index: number
-          created_at: string
-          difficulty: number
-          explanation: string | null
-          id: string
-          options: Json
-          prerequisite_concept_ids: string[]
-          question: string
-          sort_order: number
-          tags: string[]
-        }
+          concept_id: string;
+          correct_index: number;
+          created_at: string;
+          difficulty: number;
+          explanation: string | null;
+          id: string;
+          options: Json;
+          prerequisite_concept_ids: string[];
+          question: string;
+          sort_order: number;
+          tags: string[];
+        };
         Insert: {
-          concept_id: string
-          correct_index: number
-          created_at?: string
-          difficulty?: number
-          explanation?: string | null
-          id?: string
-          options: Json
-          prerequisite_concept_ids?: string[]
-          question: string
-          sort_order?: number
-          tags?: string[]
-        }
+          concept_id: string;
+          correct_index: number;
+          created_at?: string;
+          difficulty?: number;
+          explanation?: string | null;
+          id?: string;
+          options: Json;
+          prerequisite_concept_ids?: string[];
+          question: string;
+          sort_order?: number;
+          tags?: string[];
+        };
         Update: {
-          concept_id?: string
-          correct_index?: number
-          created_at?: string
-          difficulty?: number
-          explanation?: string | null
-          id?: string
-          options?: Json
-          prerequisite_concept_ids?: string[]
-          question?: string
-          sort_order?: number
-          tags?: string[]
-        }
+          concept_id?: string;
+          correct_index?: number;
+          created_at?: string;
+          difficulty?: number;
+          explanation?: string | null;
+          id?: string;
+          options?: Json;
+          prerequisite_concept_ids?: string[];
+          question?: string;
+          sort_order?: number;
+          tags?: string[];
+        };
         Relationships: [
           {
-            foreignKeyName: "questions_concept_id_fkey"
-            columns: ["concept_id"]
-            isOneToOne: false
-            referencedRelation: "concepts"
-            referencedColumns: ["id"]
+            foreignKeyName: "questions_concept_id_fkey";
+            columns: ["concept_id"];
+            isOneToOne: false;
+            referencedRelation: "concepts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       recommendation_events: {
         Row: {
-          concept_id: string
-          created_at: string
-          explanation_mode: string
-          id: string
-          kind: string
-          lane: string
-          persuasive_type: string | null
-          profile_cluster: string | null
-          student_id: string
-        }
+          concept_id: string;
+          created_at: string;
+          explanation_mode: string;
+          id: string;
+          kind: string;
+          lane: string;
+          persuasive_type: string | null;
+          profile_cluster: string | null;
+          student_id: string;
+        };
         Insert: {
-          concept_id: string
-          created_at?: string
-          explanation_mode?: string
-          id?: string
-          kind?: string
-          lane?: string
-          persuasive_type?: string | null
-          profile_cluster?: string | null
-          student_id: string
-        }
+          concept_id: string;
+          created_at?: string;
+          explanation_mode?: string;
+          id?: string;
+          kind?: string;
+          lane?: string;
+          persuasive_type?: string | null;
+          profile_cluster?: string | null;
+          student_id: string;
+        };
         Update: {
-          concept_id?: string
-          created_at?: string
-          explanation_mode?: string
-          id?: string
-          kind?: string
-          lane?: string
-          persuasive_type?: string | null
-          profile_cluster?: string | null
-          student_id?: string
-        }
-        Relationships: []
-      }
+          concept_id?: string;
+          created_at?: string;
+          explanation_mode?: string;
+          id?: string;
+          kind?: string;
+          lane?: string;
+          persuasive_type?: string | null;
+          profile_cluster?: string | null;
+          student_id?: string;
+        };
+        Relationships: [];
+      };
       students: {
         Row: {
-          briefing_generated_at: string | null
-          created_at: string
-          daily_briefing: string | null
-          id: string
-          name: string
-          placement_completed_at: string | null
-          user_id: string | null
-        }
+          briefing_generated_at: string | null;
+          created_at: string;
+          daily_briefing: string | null;
+          id: string;
+          name: string;
+          placement_completed_at: string | null;
+          user_id: string | null;
+        };
         Insert: {
-          briefing_generated_at?: string | null
-          created_at?: string
-          daily_briefing?: string | null
-          id?: string
-          name: string
-          placement_completed_at?: string | null
-          user_id?: string | null
-        }
+          briefing_generated_at?: string | null;
+          created_at?: string;
+          daily_briefing?: string | null;
+          id?: string;
+          name: string;
+          placement_completed_at?: string | null;
+          user_id?: string | null;
+        };
         Update: {
-          briefing_generated_at?: string | null
-          created_at?: string
-          daily_briefing?: string | null
-          id?: string
-          name?: string
-          placement_completed_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+          briefing_generated_at?: string | null;
+          created_at?: string;
+          daily_briefing?: string | null;
+          id?: string;
+          name?: string;
+          placement_completed_at?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [];
+      };
       subjects: {
         Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          sort_order: number
-        }
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          sort_order: number;
+        };
         Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          sort_order?: number
-        }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name: string;
+          sort_order?: number;
+        };
         Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
       user_roles: {
         Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
-    }
+          created_at?: string;
+          id?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
+      generate_join_code: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
+      join_class_by_code: {
+        Args: {
+          _code: string;
+        };
+        Returns: string;
+      };
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-    }
+          _role: Database["public"]["Enums"]["app_role"];
+          _user_id: string;
+        };
+        Returns: boolean;
+      };
+    };
     Enums: {
-      app_role: "admin" | "teacher" | "user"
-    }
+      app_role: "admin" | "teacher" | "user";
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
@@ -778,4 +839,4 @@ export const Constants = {
       app_role: ["admin", "teacher", "user"],
     },
   },
-} as const
+} as const;

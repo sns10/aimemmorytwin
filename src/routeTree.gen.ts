@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ClassesRouteImport } from './routes/classes'
 import { Route as CourseRouteImport } from './routes/course'
 import { Route as EngineRouteImport } from './routes/engine'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -23,6 +24,7 @@ import { Route as ReportRouteImport } from './routes/report'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as TimelineRouteImport } from './routes/timeline'
 import { Route as ApiRecEventRouteImport } from './routes/api/rec-event'
+import { Route as ClassIdRouteImport } from './routes/class.$id'
 import { Route as ConceptIdRouteImport } from './routes/concept.$id'
 import { Route as PlayIdRouteImport } from './routes/play.$id'
 import { Route as TopicIdRouteImport } from './routes/topic.$id'
@@ -40,6 +42,11 @@ const AdminRoute = AdminRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClassesRoute = ClassesRouteImport.update({
+  id: '/classes',
+  path: '/classes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CourseRoute = CourseRouteImport.update({
@@ -97,6 +104,11 @@ const ApiRecEventRoute = ApiRecEventRouteImport.update({
   path: '/api/rec-event',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClassIdRoute = ClassIdRouteImport.update({
+  id: '/class/$id',
+  path: '/class/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConceptIdRoute = ConceptIdRouteImport.update({
   id: '/concept/$id',
   path: '/concept/$id',
@@ -117,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/classes': typeof ClassesRoute
   '/course': typeof CourseRoute
   '/engine': typeof EngineRoute
   '/history': typeof HistoryRoute
@@ -128,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/review': typeof ReviewRoute
   '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
+  '/class/$id': typeof ClassIdRoute
   '/concept/$id': typeof ConceptIdRoute
   '/play/$id': typeof PlayIdRoute
   '/topic/$id': typeof TopicIdRoute
@@ -136,6 +150,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/classes': typeof ClassesRoute
   '/course': typeof CourseRoute
   '/engine': typeof EngineRoute
   '/history': typeof HistoryRoute
@@ -147,6 +162,7 @@ export interface FileRoutesByTo {
   '/review': typeof ReviewRoute
   '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
+  '/class/$id': typeof ClassIdRoute
   '/concept/$id': typeof ConceptIdRoute
   '/play/$id': typeof PlayIdRoute
   '/topic/$id': typeof TopicIdRoute
@@ -156,6 +172,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/classes': typeof ClassesRoute
   '/course': typeof CourseRoute
   '/engine': typeof EngineRoute
   '/history': typeof HistoryRoute
@@ -167,6 +184,7 @@ export interface FileRoutesById {
   '/review': typeof ReviewRoute
   '/timeline': typeof TimelineRoute
   '/api/rec-event': typeof ApiRecEventRoute
+  '/class/$id': typeof ClassIdRoute
   '/concept/$id': typeof ConceptIdRoute
   '/play/$id': typeof PlayIdRoute
   '/topic/$id': typeof TopicIdRoute
@@ -177,6 +195,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/classes'
     | '/course'
     | '/engine'
     | '/history'
@@ -188,6 +207,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/timeline'
     | '/api/rec-event'
+    | '/class/$id'
     | '/concept/$id'
     | '/play/$id'
     | '/topic/$id'
@@ -196,6 +216,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/classes'
     | '/course'
     | '/engine'
     | '/history'
@@ -207,6 +228,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/timeline'
     | '/api/rec-event'
+    | '/class/$id'
     | '/concept/$id'
     | '/play/$id'
     | '/topic/$id'
@@ -215,6 +237,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/classes'
     | '/course'
     | '/engine'
     | '/history'
@@ -226,6 +249,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/timeline'
     | '/api/rec-event'
+    | '/class/$id'
     | '/concept/$id'
     | '/play/$id'
     | '/topic/$id'
@@ -235,6 +259,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
+  ClassesRoute: typeof ClassesRoute
   CourseRoute: typeof CourseRoute
   EngineRoute: typeof EngineRoute
   HistoryRoute: typeof HistoryRoute
@@ -246,6 +271,7 @@ export interface RootRouteChildren {
   ReviewRoute: typeof ReviewRoute
   TimelineRoute: typeof TimelineRoute
   ApiRecEventRoute: typeof ApiRecEventRoute
+  ClassIdRoute: typeof ClassIdRoute
   ConceptIdRoute: typeof ConceptIdRoute
   PlayIdRoute: typeof PlayIdRoute
   TopicIdRoute: typeof TopicIdRoute
@@ -272,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/classes': {
+      id: '/classes'
+      path: '/classes'
+      fullPath: '/classes'
+      preLoaderRoute: typeof ClassesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/course': {
@@ -351,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRecEventRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/class/$id': {
+      id: '/class/$id'
+      path: '/class/$id'
+      fullPath: '/class/$id'
+      preLoaderRoute: typeof ClassIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/concept/$id': {
       id: '/concept/$id'
       path: '/concept/$id'
@@ -379,6 +419,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
+  ClassesRoute: ClassesRoute,
   CourseRoute: CourseRoute,
   EngineRoute: EngineRoute,
   HistoryRoute: HistoryRoute,
@@ -390,6 +431,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReviewRoute: ReviewRoute,
   TimelineRoute: TimelineRoute,
   ApiRecEventRoute: ApiRecEventRoute,
+  ClassIdRoute: ClassIdRoute,
   ConceptIdRoute: ConceptIdRoute,
   PlayIdRoute: PlayIdRoute,
   TopicIdRoute: TopicIdRoute,
