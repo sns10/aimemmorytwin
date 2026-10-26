@@ -83,11 +83,27 @@ function ClassesPage() {
       <main className="mx-auto max-w-3xl space-y-5 p-6">
         {data.isDemo ? (
           <section className="rounded-lg border border-border bg-card p-6">
-            <h1 className="text-lg">Classes need a sign-in</h1>
+            <h1 className="text-lg">Viewing as a guest</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              A class links your own memory model to a teacher&rsquo;s dashboard, so it only works
-              once you have an account.
+              The sample class below is open to everyone, so you can see what a teacher sees.
+              Creating a class or joining one with a code needs an account.
             </p>
+            {data.classes.map((c) => (
+              <Link
+                key={c.id}
+                to="/class/$id"
+                params={{ id: c.id }}
+                className="mt-4 flex items-center justify-between rounded-md border border-border px-4 py-3 text-sm hover:border-primary"
+              >
+                <span>
+                  {c.name}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {c.member_count} student{c.member_count === 1 ? "" : "s"}
+                  </span>
+                </span>
+                <span className="text-xs text-primary">Open the teacher view &rarr;</span>
+              </Link>
+            ))}
             <button
               type="button"
               onClick={() => navigate({ to: "/auth" })}

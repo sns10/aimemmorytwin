@@ -3,6 +3,10 @@ import { z } from "zod";
 
 const DAY = 86_400_000;
 
+/** A read-only class seeded for the public demo, so the cohort view can be
+ *  shown without signing in. Creating and joining still need an account. */
+export const DEMO_CLASS_ID = "22222222-2222-2222-2222-222222222222";
+
 export interface ClassSummary {
   id: string;
   name: string;
@@ -62,7 +66,31 @@ export const getMyClasses = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ isDemo: boolean; classes: ClassSummary[] }> => {
     const { resolveStudent } = await import("./session.server");
     const { supabase, studentId, userId, isDemo } = await resolveStudent();
-    if (isDemo || !userId) return { isDemo: true, classes: [] };
+    if (isDemo || !userId) {
+      // Visitors see the seeded demo class read-only.
+      const { data: demo } = await supabase
+        .from("classes")
+        .select("id, name")
+        .eq("id", DEMO_CLASS_ID)
+        .maybeSingle();
+      if (!demo) return { isDemo: true, classes: [] };
+      const { count } = await supabase
+        .from("class_members")
+        .select("student_id", { count: "exact", head: true })
+        .eq("class_id", DEMO_CLASS_ID);
+      return {
+        isDemo: true,
+        classes: [
+          {
+            id: demo.id,
+            name: demo.name,
+            join_code: null,
+            is_teacher: false,
+            member_count: count ?? 0,
+          },
+        ],
+      };
+    }
 
     const [ownedRes, memberRes] = await Promise.all([
       supabase
@@ -163,7 +191,10 @@ export const getClassDashboard = createServerFn({ method: "GET" })
       .maybeSingle();
     if (classError) throw classError;
     if (!klass) throw new Error("Class not found");
-    const isTeacher = klass.teacher_user_id === userId;
+    // The seeded demo class is shown in teacher mode so visitors can see the
+    // cohort view; its join code stays hidden.
+    const isTeacher = klass.teacher_user_id === userId || klass.id === DEMO_CLASS_ID;
+    const showCode = klass.teacher_user_id === userId;
 
     const { data: members, error: memberError } = await supabase
       .from("class_members")
@@ -182,7 +213,7 @@ export const getClassDashboard = createServerFn({ method: "GET" })
       return {
         class_id: klass.id,
         class_name: klass.name,
-        join_code: isTeacher ? klass.join_code : null,
+        join_code: showCode ? klass.join_code : null,
         students: [],
         topics: [],
         items: [],
@@ -300,7 +331,7 @@ export const getClassDashboard = createServerFn({ method: "GET" })
     return {
       class_id: klass.id,
       class_name: klass.name,
-      join_code: isTeacher ? klass.join_code : null,
+      join_code: showCode ? klass.join_code : null,
       students,
       topics,
       items: items.slice(0, 10),
