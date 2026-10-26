@@ -45,6 +45,13 @@ export interface ItemFlag {
   flag: "too hard" | "too easy";
 }
 
+export interface Suggestion {
+  kind: "reteach" | "nudge" | "review" | "item" | "unblock" | "advance";
+  title: string;
+  detail: string;
+  students?: string[];
+}
+
 export interface ClassDashboard {
   class_id: string;
   class_name: string;
@@ -52,7 +59,10 @@ export interface ClassDashboard {
   students: RosterRow[];
   topics: TopicRow[];
   items: ItemFlag[];
-  totals: { students: number; answered_7d: number; avg_readiness: number };
+  suggestions: Suggestion[];
+  activity: { date: string; answers: number }[];
+  coverage: { started: number; mastered: number; total: number };
+  totals: { students: number; answered_7d: number; avg_readiness: number; inactive: number };
 }
 
 function recall(stability: number, last: string | null, now: number): number {
@@ -217,12 +227,18 @@ export const getClassDashboard = createServerFn({ method: "GET" })
         students: [],
         topics: [],
         items: [],
-        totals: { students: 0, answered_7d: 0, avg_readiness: 0 },
+        suggestions: [],
+        activity: [],
+        coverage: { started: 0, mastered: 0, total: 0 },
+        totals: { students: 0, answered_7d: 0, avg_readiness: 0, inactive: 0 },
       };
     }
 
     const [conceptsRes, statesRes, eventsRes, questionsRes] = await Promise.all([
-      supabase.from("concepts").select("id, name, chapter_id, chapters(name)").order("sort_order"),
+      supabase
+        .from("concepts")
+        .select("id, name, chapter_id, prerequisite_id, chapters(name)")
+        .order("sort_order"),
       supabase
         .from("knowledge_states")
         .select("student_id, concept_id, mastery_probability, memory_stability, last_reviewed_at")
@@ -231,7 +247,7 @@ export const getClassDashboard = createServerFn({ method: "GET" })
         .from("learning_events")
         .select("student_id, concept_id, question_id, is_correct, created_at, event_kind")
         .in("student_id", studentIds)
-        .gte("created_at", new Date(now - 7 * DAY).toISOString()),
+        .gte("created_at", new Date(now - 21 * DAY).toISOString()),
       supabase.from("questions").select("id, question, concept_id"),
     ]);
     for (const r of [conceptsRes, statesRes, eventsRes, questionsRes]) if (r.error) throw r.error;
@@ -242,7 +258,9 @@ export const getClassDashboard = createServerFn({ method: "GET" })
       const ch = c.chapters as { name: string } | null;
       chapterOf.set(c.id, ch?.name ?? "");
     }
-    const answers = (eventsRes.data ?? []).filter((e) => e.event_kind === "quiz_answer");
+    const allAnswers = (eventsRes.data ?? []).filter((e) => e.event_kind === "quiz_answer");
+    const conceptNameById = new Map(concepts.map((c) => [c.id, c.name]));
+    const answers = allAnswers.filter((a) => new Date(a.created_at).getTime() >= now - 7 * DAY);
 
     // ------------------------------------------------------------- roster
     const students: RosterRow[] = studentIds.map((sid) => {
@@ -309,7 +327,7 @@ export const getClassDashboard = createServerFn({ method: "GET" })
     const questionText = new Map(
       (questionsRes.data ?? []).map((q) => [q.id, { q: q.question, concept_id: q.concept_id }]),
     );
-    const conceptName = new Map(concepts.map((c) => [c.id, c.name]));
+    const conceptName = conceptNameById;
     const items: ItemFlag[] = [];
     for (const [qid, row] of perQuestion) {
       if (row.n < 4) continue; // too few attempts to judge
@@ -328,6 +346,118 @@ export const getClassDashboard = createServerFn({ method: "GET" })
     }
     items.sort((a, b) => a.accuracy - b.accuracy);
 
+    // --------------------------------------------------- activity trend
+    const activity: { date: string; answers: number }[] = [];
+    for (let i = 13; i >= 0; i--) {
+      const key = new Date(now - i * DAY).toISOString().slice(0, 10);
+      activity.push({
+        date: key,
+        answers: allAnswers.filter((a) => a.created_at.slice(0, 10) === key).length,
+      });
+    }
+
+    // ------------------------------------------------------- coverage
+    const perTopicStarted = new Set(
+      (statesRes.data ?? [])
+        .filter((st) => st.last_reviewed_at !== null)
+        .map((st) => st.concept_id),
+    );
+    const topicFullyMastered = topics.filter(
+      (t) => studentIds.length > 0 && t.mastered_count / studentIds.length >= 0.8,
+    );
+
+    // ---------------------------------------------------- suggestions
+    // Plain rules over the same numbers, so every suggestion can be traced
+    // back to a column the teacher can see on this page.
+    const suggestions: Suggestion[] = [];
+
+    const reteach = topics
+      .filter((t) => t.attempts >= 6 && (t.accuracy ?? 1) < 0.55)
+      .sort((a, b) => (a.accuracy ?? 1) - (b.accuracy ?? 1))[0];
+    if (reteach) {
+      suggestions.push({
+        kind: "reteach",
+        title: `Reteach ${reteach.name}`,
+        detail: `The class is answering ${Math.round((reteach.accuracy ?? 0) * 100)}% correct across ${reteach.attempts} attempts, and only ${reteach.mastered_count} of ${studentIds.length} have mastered it.`,
+      });
+    }
+
+    const inactive = students.filter((s) => s.answered_7d === 0);
+    if (inactive.length > 0) {
+      suggestions.push({
+        kind: "nudge",
+        title:
+          inactive.length === 1
+            ? `${inactive[0].name} has stopped practising`
+            : `${inactive.length} students have stopped practising`,
+        detail:
+          "No answers in the last 7 days. Their mastery still looks fine on paper, but predicted recall keeps falling while they are away.",
+        students: inactive.map((s) => s.name),
+      });
+    }
+
+    const dueNow = concepts.filter((c) => {
+      const states = (statesRes.data ?? []).filter(
+        (st) => st.concept_id === c.id && st.last_reviewed_at !== null,
+      );
+      if (states.length < Math.max(2, Math.ceil(studentIds.length / 2))) return false;
+      const fading = states.filter(
+        (st) => recall(Number(st.memory_stability), st.last_reviewed_at, now) < 0.8,
+      ).length;
+      return fading / states.length >= 0.6;
+    });
+    if (dueNow.length > 0) {
+      suggestions.push({
+        kind: "review",
+        title: `Run a revision session on ${dueNow.length} topic${dueNow.length === 1 ? "" : "s"}`,
+        detail: `Most of the class has dropped below the 80% recall threshold on: ${dueNow
+          .slice(0, 4)
+          .map((c) => c.name)
+          .join(", ")}${dueNow.length > 4 ? ", and others" : ""}.`,
+      });
+    }
+
+    const worstItem = items[0];
+    if (worstItem && worstItem.flag === "too hard" && worstItem.accuracy <= 0.2) {
+      suggestions.push({
+        kind: "item",
+        title: "Check one question before the next test",
+        detail: `"${worstItem.question.slice(0, 90)}" is answered correctly ${Math.round(worstItem.accuracy * 100)}% of the time over ${worstItem.attempts} attempts — usually a sign of unclear wording or a wrong answer key.`,
+      });
+    }
+
+    const blocked = concepts
+      .map((c) => {
+        if (!c.prerequisite_id) return null;
+        const prereqStates = (statesRes.data ?? []).filter(
+          (st) => st.concept_id === c.prerequisite_id,
+        );
+        const ready = prereqStates.filter((st) => Number(st.mastery_probability) >= 0.6).length;
+        if (prereqStates.length === 0 || ready / prereqStates.length > 0.4) return null;
+        const prereqName = conceptNameById.get(c.prerequisite_id) ?? "its prerequisite";
+        return { name: c.name, prereqName, ready, total: prereqStates.length };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    if (blocked.length > 0) {
+      const b = blocked[0];
+      suggestions.push({
+        kind: "unblock",
+        title: `${b.prereqName} is holding the class back`,
+        detail: `Only ${b.ready} of ${b.total} students are solid on ${b.prereqName}, which gates ${blocked.length} later topic${blocked.length === 1 ? "" : "s"} including ${b.name}. Fix the prerequisite before moving on.`,
+      });
+    }
+
+    if (topicFullyMastered.length > 0) {
+      suggestions.push({
+        kind: "advance",
+        title: `${topicFullyMastered.length} topic${topicFullyMastered.length === 1 ? " is" : "s are"} ready to move past`,
+        detail: `At least 80% of the class has mastered: ${topicFullyMastered
+          .slice(0, 4)
+          .map((t) => t.name)
+          .join(", ")}. Spend class time elsewhere.`,
+      });
+    }
+
     return {
       class_id: klass.id,
       class_name: klass.name,
@@ -335,6 +465,13 @@ export const getClassDashboard = createServerFn({ method: "GET" })
       students,
       topics,
       items: items.slice(0, 10),
+      suggestions,
+      activity,
+      coverage: {
+        started: perTopicStarted.size,
+        mastered: topicFullyMastered.length,
+        total: concepts.length,
+      },
       totals: {
         students: studentIds.length,
         answered_7d: answers.length,
@@ -342,6 +479,7 @@ export const getClassDashboard = createServerFn({ method: "GET" })
           students.length > 0
             ? students.reduce((sum, s) => sum + s.readiness, 0) / students.length
             : 0,
+        inactive: inactive.length,
       },
     };
   });

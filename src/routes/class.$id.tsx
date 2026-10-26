@@ -1,7 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowLeft, Users, AlertTriangle, Flame, Gauge } from "lucide-react";
-import { getClassDashboard } from "@/lib/class.functions";
+import {
+  ArrowLeft,
+  Users,
+  AlertTriangle,
+  Flame,
+  Gauge,
+  Lightbulb,
+  RotateCcw,
+  BellRing,
+  GraduationCap,
+  Link2,
+} from "lucide-react";
+import { getClassDashboard, type Suggestion } from "@/lib/class.functions";
 
 const dashQuery = (id: string) =>
   queryOptions({
@@ -29,6 +40,31 @@ function Bar({ value, tone = "primary" }: { value: number; tone?: "primary" | "w
         className={tone === "warn" ? "h-full bg-destructive" : "h-full bg-primary"}
         style={{ width: `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%` }}
       />
+    </div>
+  );
+}
+
+const SUGGESTION_ICON: Record<Suggestion["kind"], React.ComponentType<{ className?: string }>> = {
+  reteach: GraduationCap,
+  nudge: BellRing,
+  review: RotateCcw,
+  item: Gauge,
+  unblock: Link2,
+  advance: Flame,
+};
+
+function Sparkline({ data }: { data: { date: string; answers: number }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.answers));
+  return (
+    <div className="flex h-12 items-end gap-1">
+      {data.map((d) => (
+        <div
+          key={d.date}
+          title={`${d.date}: ${d.answers} answers`}
+          className="flex-1 rounded-t bg-primary/70"
+          style={{ height: `${Math.max(2, (d.answers / max) * 48)}px` }}
+        />
+      ))}
     </div>
   );
 }
@@ -82,6 +118,59 @@ function ClassPage() {
 
         {d.totals.students > 0 && (
           <>
+            {/* what a teacher should do next, derived from the tables below */}
+            {d.suggestions.length > 0 && (
+              <section className="rounded-lg border border-primary/40 bg-primary/5 p-4">
+                <h2 className="inline-flex items-center gap-1.5 text-sm">
+                  <Lightbulb className="h-4 w-4 text-primary" /> Suggested next actions
+                </h2>
+                <ul className="mt-3 space-y-3">
+                  {d.suggestions.map((sg, i) => {
+                    const Icon = SUGGESTION_ICON[sg.kind];
+                    return (
+                      <li key={i} className="flex items-start gap-3">
+                        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <div>
+                          <p className="text-sm font-medium">{sg.title}</p>
+                          <p className="text-xs text-muted-foreground">{sg.detail}</p>
+                          {sg.students && (
+                            <p className="mt-1 text-xs text-foreground">{sg.students.join(", ")}</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Each suggestion comes from the same numbers shown below — nothing here is a guess.
+                </p>
+              </section>
+            )}
+
+            {/* class-level shape: activity and coverage */}
+            <section className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-lg border border-border bg-card p-4 sm:col-span-2">
+                <h2 className="text-sm">Class activity, last 14 days</h2>
+                <div className="mt-3">
+                  <Sparkline data={d.activity} />
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {d.totals.answered_7d} answers in the last 7 days · {d.totals.inactive} student
+                  {d.totals.inactive === 1 ? "" : "s"} inactive
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-4">
+                <h2 className="text-sm">Syllabus coverage</h2>
+                <p className="mt-2 font-mono text-2xl">
+                  {d.coverage.started}/{d.coverage.total}
+                </p>
+                <p className="text-xs text-muted-foreground">topics the class has started</p>
+                <p className="mt-2 font-mono text-lg">{d.coverage.mastered}</p>
+                <p className="text-xs text-muted-foreground">
+                  mastered by 80% or more of the class
+                </p>
+              </div>
+            </section>
             {/* at-risk students first: the reason a teacher opens this page */}
             <section className="rounded-lg border border-border bg-card p-4">
               <h2 className="inline-flex items-center gap-1.5 text-sm">
